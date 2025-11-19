@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="AdditionalModuleElements">
+    <content url="file://$MODULE_DIR$" dumb="true">
+      <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/AI/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/mqtt_broker/mosquitto/data" />
+      <excludeFolder url="file://$MODULE_DIR$/mqtt_broker/mosquitto/log" />
+      <excludeFolder url="file://$MODULE_DIR$/mqtt_broker/mysql_data" />
+      <excludeFolder url="file://$MODULE_DIR$/mqtt_broker/redis_data" />
+    </content>
+  </component>
+</module>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart Garden</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-green-600">🌱 Smart Garden</h1>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="/dashboard.html" class="px-4 py-2 bg-green-500 text-white rounded-lg">Dashboard</a>
+                    <a href="/control.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Điều khiển</a>
+                    <a href="/index.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">AI Chat</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Device Selector -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Chọn hehe thiết bị:</label>
+                    <select id="deviceSelector" class="ml-3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        <option value="">Đang tải...</option>
+                    </select>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="btn1Day" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">1 Ngày</button>
+                    <button id="btn1Week" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">1 Tuần</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="text-center py-12 hidden">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+            <p class="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg hidden mb-6">
+            <span id="errorText"></span>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Temperature Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Nhiệt độ TB</p>
+                        <p class="text-2xl font-bold text-gray-900" id="avgTemp">-- °C</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Humidity Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Độ ẩm KK TB</p>
+                        <p class="text-2xl font-bold text-gray-900" id="avgHumidity">-- %</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Light Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Ánh sáng TB</p>
+                        <p class="text-2xl font-bold text-gray-900" id="avgLight">-- lx</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Soil Moisture Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Độ ẩm đất TB</p>
+                        <p class="text-2xl font-bold text-gray-900" id="avgSoil">-- %</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Temperature Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Nhiệt độ (°C)</h3>
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Air Humidity Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Độ ẩm không khí (%)</h3>
+                <div class="chart-container">
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Light Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Ánh sáng (lux)</h3>
+                <div class="chart-container">
+                    <canvas id="lightChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Soil Moisture Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Độ ẩm đất (%)</h3>
+                <div class="chart-container">
+                    <canvas id="soilChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDeviceUid = 'ESP32_GARDEN_001';
+        let currentPeriod = '1day';
+        let charts = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDevices();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('deviceSelector').addEventListener('change', function(e) {
+                currentDeviceUid = e.target.value;
+                loadData();
+            });
+
+            document.getElementById('btn1Day').addEventListener('click', function() {
+                currentPeriod = '1day';
+                updatePeriodButtons();
+                loadData();
+            });
+
+            document.getElementById('btn1Week').addEventListener('click', function() {
+                currentPeriod = '1week';
+                updatePeriodButtons();
+                loadData();
+            });
+        }
+
+        function updatePeriodButtons() {
+            const btn1Day = document.getElementById('btn1Day');
+            const btn1Week = document.getElementById('btn1Week');
+            
+            if (currentPeriod === '1day') {
+                btn1Day.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600';
+                btn1Week.className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300';
+            } else {
+                btn1Day.className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300';
+                btn1Week.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600';
+            }
+        }
+
+        async function loadDevices() {
+            try {
+                const response = await fetch('/api/v1/devices');
+                const result = await response.json();
+                
+                const selector = document.getElementById('deviceSelector');
+                selector.innerHTML = '';
+                
+                if (result.data && result.data.length > 0) {
+                    result.data.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceUid;
+                        option.textContent = `${device.name} (${device.deviceUid})`;
+                        selector.appendChild(option);
+                    });
+                    currentDeviceUid = result.data[0].deviceUid;
+                    loadData();
+                } else {
+                    selector.innerHTML = '<option>Không có thiết bị</option>';
+                }
+            } catch (error) {
+                console.error('Error loading devices:', error);
+                showError('Không thể tải danh sách thiết bị: ' + error.message);
+            }
+        }
+
+        async function loadData() {
+            showLoading(true);
+            hideError();
+
+            try {
+                const { from, to } = getTimeRange();
+                const url = `/api/v1/devices/ESP32_GARDEN_001/history?from=${from}&to=${to}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.data && result.data.length > 0) {
+                    processData(result.data);
+                } else {
+                    showError('Không có dữ liệu trong khoảng thời gian này');
+                    clearCharts();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Lỗi khi tải dữ liệu: ' + error.message);
+                clearCharts();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function getTimeRange() {
+            const now = new Date();
+            const to = now.getTime();
+            let from;
+
+            if (currentPeriod === '1day') {
+                from = now.getTime() - 24 * 60 * 60 * 1000;
+            } else {
+                from = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+            }
+
+            return { from, to };
+        }
+
+        function processData(data) {
+            data.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            const labels = data.map(d => formatDate(d.createdAt));
+            const temps = data.map(d => d.temperature || 0);
+            const humidity = data.map(d => d.air_humidity || d.airHumidity || 0);
+            const light = data.map(d => d.light_level || d.lightLevel || 0);
+            const soil = data.map(d => d.soil_moisture || d.soilMoisture || 0);
+
+            document.getElementById('avgTemp').textContent = calculateAvg(temps).toFixed(1) + ' °C';
+            document.getElementById('avgHumidity').textContent = calculateAvg(humidity).toFixed(1) + ' %';
+            document.getElementById('avgLight').textContent = calculateAvg(light).toFixed(0) + ' lx';
+            document.getElementById('avgSoil').textContent = calculateAvg(soil).toFixed(1) + ' %';
+
+            createChart('tempChart', 'Nhiệt độ', labels, temps, 'rgb(239, 68, 68)');
+            createChart('humidityChart', 'Độ ẩm KK', labels, humidity, 'rgb(59, 130, 246)');
+            createChart('lightChart', 'Ánh sáng', labels, light, 'rgb(250, 204, 21)');
+            createChart('soilChart', 'Độ ẩm đất', labels, soil, 'rgb(34, 197, 94)');
+        }
+
+        function createChart(canvasId, label, labels, data, color) {
+            const ctx = document.getElementById(canvasId);
+            
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+
+            charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            
+            if (currentPeriod === '1day') {
+                return date.toLocaleTimeString('vi-VN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            } else {
+                return date.toLocaleDateString('vi-VN', { 
+                    day: '2-digit', 
+                    month: '2-digit' 
+                });
+            }
+        }
+
+        function calculateAvg(arr) {
+            if (arr.length === 0) return 0;
+            const sum = arr.reduce((a, b) => a + b, 0);
+            return sum / arr.length;
+        }
+
+        function clearCharts() {
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            charts = {};
+            
+            document.getElementById('avgTemp').textContent = '-- °C';
+            document.getElementById('avgHumidity').textContent = '-- %';
+            document.getElementById('avgLight').textContent = '-- lx';
+            document.getElementById('avgSoil').textContent = '-- %';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').classList.toggle('hidden', !show);
+        }
+
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

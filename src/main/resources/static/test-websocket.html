@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test - Smart Garden</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 3px solid #007bff; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .message { padding: 5px; border-bottom: 1px solid #eee; }
+        .timestamp { color: #6c757d; margin-right: 10px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .data { background: #e7f3ff; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 WebSocket Connection Test</h1>
+        
+        <div id="status" class="status disconnected">
+            ❌ Disconnected
+        </div>
+
+        <div>
+            <button onclick="connectWebSocket()">🔗 Connect</button>
+            <button onclick="disconnectWebSocket()">✖️ Disconnect</button>
+            <button onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+
+        <h3>📊 Latest Data:</h3>
+        <div id="latestData" class="data">
+            <p>Waiting for data...</p>
+        </div>
+
+        <h3>📝 Connection Log:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        const DEVICE_ID = 'ESP32_GARDEN_001';
+
+        function addLog(message, isError = false) {
+            const log = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `<span class="timestamp">[${timestamp}]</span><span style="color: ${isError ? 'red' : 'black'}">${message}</span>`;
+            log.appendChild(messageDiv);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.innerHTML = '✅ Connected';
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '❌ Disconnected';
+            }
+        }
+
+        function updateData(data) {
+            const dataDiv = document.getElementById('latestData');
+            dataDiv.innerHTML = `
+                <p><strong>Device:</strong> ${data.device_uid || 'N/A'}</p>
+                <p><strong>Status:</strong> <span style="color: ${data.status === 'ONLINE' ? 'green' : 'red'}">${data.status || 'N/A'}</span></p>
+                <p><strong>Temperature:</strong> ${data.sensors?.temperature || 0}°C</p>
+                <p><strong>Air Humidity:</strong> ${data.sensors?.air_humidity || 0}%</p>
+                <p><strong>Light:</strong> ${data.sensors?.light || 0} lx</p>
+                <p><strong>Soil Moisture:</strong> ${data.sensors?.soil_moisture || 0}%</p>
+                <p><strong>Pump:</strong> ${data.pump_state || 'N/A'}</p>
+                <p><strong>Mode:</strong> ${data.control_mode || 'N/A'}</p>
+                <p><small>Last update: ${new Date().toLocaleTimeString()}</small></p>
+            `;
+        }
+
+        function connectWebSocket() {
+            addLog('🔄 Attempting to connect to WebSocket...');
+            
+            try {
+                // SockJS endpoint
+                const socket = new SockJS('http://localhost:8080/ws');
+                stompClient = Stomp.over(socket);
+
+                // Enable debug
+                stompClient.debug = function(str) {
+                    addLog('DEBUG: ' + str);
+                };
+
+                stompClient.connect({}, function(frame) {
+                    addLog('✅ Connected to WebSocket!');
+                    addLog('Frame: ' + frame);
+                    updateStatus(true);
+
+                    // Subscribe to device updates
+                    const topic = `/topic/device/${DEVICE_ID}`;
+                    addLog(`📡 Subscribing to: ${topic}`);
+                    
+                    stompClient.subscribe(topic, function(message) {
+                        addLog(`📨 Received message on ${topic}`);
+                        addLog(`Raw message: ${message.body}`);
+                        
+                        try {
+                            const data = JSON.parse(message.body);
+                            addLog(`✅ Parsed data: Temperature=${data.sensors?.temperature}°C, Humidity=${data.sensors?.air_humidity}%`);
+                            updateData(data);
+                        } catch (e) {
+                            addLog(`❌ Error parsing message: ${e.message}`, true);
+                        }
+                    });
+
+                    addLog('✅ Subscribed successfully!');
+
+                }, function(error) {
+                    addLog('❌ Connection error: ' + error, true);
+                    updateStatus(false);
+                    console.error('WebSocket error:', error);
+                });
+
+            } catch (e) {
+                addLog('❌ Exception: ' + e.message, true);
+                console.error('Exception:', e);
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (stompClient !== null) {
+                stompClient.disconnect(function() {
+                    addLog('✖️ Disconnected from WebSocket');
+                    updateStatus(false);
+                });
+            } else {
+                addLog('⚠️ No active connection to disconnect', true);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            addLog('🗑️ Log cleared');
+        }
+
+        // Auto-connect on page load
+        window.addEventListener('load', function() {
+            addLog('🚀 Page loaded');
+            addLog(`📍 Device ID: ${DEVICE_ID}`);
+            addLog('⏳ Click "Connect" button to start');
+        });
+    </script>
+</body>
+</html>
