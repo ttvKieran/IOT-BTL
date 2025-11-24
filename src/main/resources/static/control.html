@@ -9,127 +9,105 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
         @keyframes pulse-ring {
-            0% {
-                transform: scale(0.33);
-            }
-            80%, 100% {
-                opacity: 0;
-            }
+            0% { transform: scale(0.33); }
+            80%, 100% { opacity: 0; }
         }
+        .status-online { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #22c55e; }
+        input:checked + .slider:before { transform: translateX(26px); }
 
-        .status-online {
-            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #22c55e;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .gauge {
-            width: 100%;
-            height: 200px;
-        }
+        /* Animation cho việc ẩn hiện */
+        .fade-enter { opacity: 0; transform: translateY(-10px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: opacity 300ms, transform 300ms; }
+        .fade-exit { opacity: 1; transform: translateY(0); }
+        .fade-exit-active { opacity: 0; transform: translateY(-10px); transition: opacity 300ms, transform 300ms; }
+        .hidden-smooth { display: none; }
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-green-600">🌱 Smart Garden</h1>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="/dashboard.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</a>
-                    <a href="/control.html" class="px-4 py-2 bg-green-500 text-white rounded-lg">Điều khiển</a>
-                    <a href="/index.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">AI Chat</a>
-                </div>
+<!-- Navigation -->
+<nav class="bg-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl font-bold text-green-600">🌱 Smart Garden</h1>
+            </div>
+            <div class="flex space-x-4">
+                <a href="/dashboard.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">Dashboard</a>
+                <a href="/control.html" class="px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">Điều khiển</a>
+                <a href="/index.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">AI Chat</a>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Device Selector & Status -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <label class="text-sm font-medium text-gray-700">Chọn h3h3 thiết bị:</label>
-                    <select id="deviceSelector" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                        <option value="">Đang tải...</option>
-                    </select>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div id="statusIndicator" class="relative">
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Device Selector & Status -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <label class="text-sm font-medium text-gray-700">Thiết bị:</label>
+                <select id="deviceSelector" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-gray-50 min-w-[200px]">
+                    <option value="">Đang tải...</option>
+                </select>
+            </div>
+            <div class="flex items-center space-x-3 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
+                <div id="statusIndicator" class="relative">
                         <span class="flex h-3 w-3">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
                         </span>
-                    </div>
-                    <span id="statusText" class="text-sm font-medium text-gray-500">Đang kết nối...</span>
-                    <span id="lastUpdate" class="text-xs text-gray-400 ml-2">--</span>
                 </div>
+                <span id="statusText" class="text-sm font-semibold text-gray-500">Đang kết nối...</span>
+                <span class="text-gray-300">|</span>
+                <span id="lastUpdate" class="text-xs text-gray-400">--:--:--</span>
             </div>
         </div>
+    </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Control Panel -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6">Điều khiển</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Controls -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Main Control Panel -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Bảng Điều Khiển
+                </h2>
 
-                    <!-- Pump Control -->
-                    <div class="mb-6 pb-6 border-b">
+                <!-- Control Mode -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Chế độ hoạt động</h3>
+                    <div class="flex p-1 bg-gray-100 rounded-xl">
+                        <button id="btnManual" class="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200">
+                            Thủ công (Manual)
+                        </button>
+                        <button id="btnAuto" class="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200">
+                            Tự động (Auto)
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 text-center">
+                        Hiện tại: <span id="currentMode" class="font-bold text-gray-700">--</span>
+                    </p>
+                </div>
+
+                <!-- Pump Control (Chỉ hiện khi MANUAL) -->
+                <div id="manualControls" class="transition-all duration-300">
+                    <div class="border-t border-gray-100 pt-6">
                         <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <div class="flex items-center space-x-4">
+                                <div class="p-3 rounded-full bg-blue-50 text-blue-600 ring-1 ring-blue-100">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-gray-800">Máy bơm</h3>
-                                    <p class="text-sm text-gray-500" id="pumpStatus">Trạng thái: --</p>
+                                    <h3 class="font-semibold text-gray-800">Máy bơm nước</h3>
+                                    <p class="text-sm text-gray-500" id="pumpStatus">Đang TẮT</p>
                                 </div>
                             </div>
                             <label class="switch">
@@ -137,391 +115,457 @@
                                 <span class="slider"></span>
                             </label>
                         </div>
-                        <div id="pumpMessage" class="text-sm text-gray-600 bg-gray-50 p-3 rounded hidden"></div>
+                        <div id="pumpMessage" class="text-sm text-center p-2 rounded hidden transition-opacity"></div>
                     </div>
+                </div>
 
-                    <!-- Control Mode -->
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-gray-800 mb-3">Chế độ điều khiển</h3>
-                        <div class="flex space-x-2">
-                            <button id="btnManual" class="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-green-500 transition-colors">
-                                Manual
-                            </button>
-                            <button id="btnAuto" class="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-green-500 transition-colors">
-                                Auto
-                            </button>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">
-                            Chế độ hiện tại: <span id="currentMode" class="font-semibold">--</span>
-                        </p>
-                    </div>
-
-                    <!-- Quick Stats -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Thống kê nhanh</h4>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Nhiệt độ:</span>
-                                <span class="font-semibold" id="quickTemp">-- °C</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Độ ẩm KK:</span>
-                                <span class="font-semibold" id="quickHumidity">-- %</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Ánh sáng:</span>
-                                <span class="font-semibold" id="quickLight">-- lx</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Độ ẩm đất:</span>
-                                <span class="font-semibold" id="quickSoil">-- %</span>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Auto Mode Indicator (Chỉ hiện khi AUTO) -->
+                <div id="autoModeIndicator" class="hidden-smooth text-center py-4 bg-green-50 rounded-lg border border-green-100">
+                    <p class="text-green-700 font-medium flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Hệ thống đang chạy tự động
+                    </p>
+                    <p class="text-xs text-green-600 mt-1">Thiết bị sẽ tự quyết định việc tưới nước</p>
                 </div>
             </div>
 
-            <!-- Real-time Sensors -->
-            <div class="lg:col-span-2">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Temperature -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Nhiệt độ</h3>
-                            <div class="p-2 rounded-full bg-red-100 text-red-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="tempValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">°C</p>
-                        </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="tempBar" class="bg-red-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>0°C</span>
-                                <span>50°C</span>
-                            </div>
+            <!-- Server-side Automation Config (Chỉ hiện khi MANUAL - Mới thêm) -->
+            <div id="automationConfig" class="bg-white rounded-xl shadow-md p-6 hidden-smooth transition-all duration-300 border-l-4 border-purple-500">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Cấu hình Ngưỡng Tự động
+                </h2>
+                <p class="text-xs text-gray-500 mb-4">Hệ thống sẽ tự bật bơm khi đạt ngưỡng cài đặt (kể cả khi ở chế độ Manual).</p>
+
+                <div class="space-y-4">
+                    <!-- Toggle bật/tắt -->
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span class="text-sm font-medium text-gray-700">Kích hoạt</span>
+                        <label class="switch scale-75 origin-right">
+                            <input type="checkbox" id="thresholdActive">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Input Ngưỡng đất -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
+                            Bật bơm khi độ ẩm đất dưới (%):
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="minSoil" class="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="30">
+                            <span class="absolute right-3 top-2 text-gray-400">%</span>
                         </div>
                     </div>
 
-                    <!-- Air Humidity -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Độ ẩm KK</h3>
-                            <div class="p-2 rounded-full bg-blue-100 text-blue-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="humidityValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">%</p>
-                        </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="humidityBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>0%</span>
-                                <span>100%</span>
-                            </div>
+                    <!-- Input Thời gian bơm -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
+                            Thời gian bơm tối đa (giây):
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="pumpDuration" class="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="10">
+                            <span class="absolute right-3 top-2 text-gray-400">s</span>
                         </div>
                     </div>
 
-                    <!-- Light -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Ánh sáng</h3>
-                            <div class="p-2 rounded-full bg-yellow-100 text-yellow-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="lightValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">lux</p>
-                        </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="lightBar" class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>0 lx</span>
-                                <span>10000 lx</span>
-                            </div>
+                    <button onclick="saveThresholdSettings()" class="w-full bg-purple-600 text-white py-2.5 rounded-lg hover:bg-purple-700 transition shadow-sm font-medium flex justify-center items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        Lưu cấu hình
+                    </button>
+
+                    <p id="configMsg" class="text-xs text-center mt-1 h-4 font-medium"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Sensors -->
+        <div class="lg:col-span-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Temperature -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-red-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Nhiệt độ</h3>
+                        <div class="p-2 rounded-full bg-red-50 text-red-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         </div>
                     </div>
+                    <div class="flex items-end space-x-2 mb-2">
+                        <p class="text-5xl font-bold text-gray-900" id="tempValue">--</p>
+                        <p class="text-xl text-gray-500 mb-2">°C</p>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div id="tempBar" class="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
 
-                    <!-- Soil Moisture -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Độ ẩm đất</h3>
-                            <div class="p-2 rounded-full bg-green-100 text-green-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                                </svg>
-                            </div>
+                <!-- Air Humidity -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-blue-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Độ ẩm KK</h3>
+                        <div class="p-2 rounded-full bg-blue-50 text-blue-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                         </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="soilValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">%</p>
+                    </div>
+                    <div class="flex items-end space-x-2 mb-2">
+                        <p class="text-5xl font-bold text-gray-900" id="humidityValue">--</p>
+                        <p class="text-xl text-gray-500 mb-2">%</p>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div id="humidityBar" class="bg-gradient-to-r from-blue-300 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Light -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-yellow-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Ánh sáng</h3>
+                        <div class="p-2 rounded-full bg-yellow-50 text-yellow-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="soilBar" class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>0%</span>
-                                <span>100%</span>
-                            </div>
+                    </div>
+                    <div class="flex items-end space-x-2 mb-2">
+                        <p class="text-5xl font-bold text-gray-900" id="lightValue">--</p>
+                        <p class="text-xl text-gray-500 mb-2">lux</p>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div id="lightBar" class="bg-gradient-to-r from-yellow-300 to-yellow-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Soil Moisture -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-green-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Độ ẩm đất</h3>
+                        <div class="p-2 rounded-full bg-green-50 text-green-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                         </div>
+                    </div>
+                    <div class="flex items-end space-x-2 mb-2">
+                        <p class="text-5xl font-bold text-gray-900" id="soilValue">--</p>
+                        <p class="text-xl text-gray-500 mb-2">%</p>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div id="soilBar" class="bg-gradient-to-r from-green-300 to-green-600 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        let currentDeviceUid = 'ESP32_GARDEN_001';
-        let stompClient = null;
-        let isManualControl = false;
+<script>
+    let currentDeviceUid = 'ESP32_GARDEN_001';
+    let stompClient = null;
+    let currentMode = 'MANUAL'; // Lưu trạng thái mode hiện tại
 
-        document.addEventListener('DOMContentLoaded', async function() {
-            setupEventListeners();
-            await loadDevices();
+    document.addEventListener('DOMContentLoaded', async function() {
+        setupEventListeners();
+        await loadDevices();
+        connectWebSocket();
+    });
+
+    function setupEventListeners() {
+        document.getElementById('deviceSelector').addEventListener('change', function(e) {
+            currentDeviceUid = e.target.value;
+            disconnectWebSocket();
+            loadCurrentState();
+            // Load lại config threshold khi đổi thiết bị
+            loadThresholdSettings();
             connectWebSocket();
         });
 
-        function setupEventListeners() {
-            document.getElementById('deviceSelector').addEventListener('change', function(e) {
-                currentDeviceUid = e.target.value;
-                disconnectWebSocket();
-                loadCurrentState();
-                connectWebSocket();
-            });
-
-            document.getElementById('pumpSwitch').addEventListener('change', function(e) {
+        document.getElementById('pumpSwitch').addEventListener('change', function(e) {
+            // Chỉ cho phép bật tắt khi ở chế độ Manual
+            if (currentMode === 'MANUAL') {
                 controlPump(e.target.checked);
-            });
-
-            document.getElementById('btnManual').addEventListener('click', function() {
-                setControlMode('MANUAL');
-            });
-
-            document.getElementById('btnAuto').addEventListener('click', function() {
-                setControlMode('AUTO');
-            });
-        }
-
-        async function loadDevices() {
-            try {
-                const response = await fetch('/api/v1/devices');
-                const result = await response.json();
-                
-                const selector = document.getElementById('deviceSelector');
-                selector.innerHTML = '';
-                
-                if (result.data && result.data.length > 0) {
-                    result.data.forEach(device => {
-                        const option = document.createElement('option');
-                        option.value = device.deviceUid;
-                        option.textContent = `${device.name} (ESP32_GARDEN_001)`;
-                        selector.appendChild(option);
-                    });
-                    currentDeviceUid = result.data[0].deviceUid;
-                    loadCurrentState();
-                } else {
-                    selector.innerHTML = '<option>Không có thiết bị</option>';
-                }
-            } catch (error) {
-                console.error('Error loading devices:', error);
-            }
-        }
-
-        async function loadCurrentState() {
-            try {
-                const response = await fetch(`/api/v1/devices/ESP32_GARDEN_001/state`);
-                const result = await response.json();
-                
-                if (result.data) {
-                    updateUI(result.data);
-                }
-            } catch (error) {
-                console.error('Error loading current state:', error);
-            }
-        }
-
-        function connectWebSocket() {
-            const socket = new SockJS('/ws');
-            stompClient = Stomp.over(socket);
-            
-            stompClient.connect({}, function(frame) {
-                console.log('Connected to WebSocket');
-                updateStatus('ONLINE');
-                
-                stompClient.subscribe(`/topic/device/ESP32_GARDEN_001`, function(message) {
-                    const data = JSON.parse(message.body);
-                    updateUI(data);
-                });
-            }, function(error) {
-                console.error('WebSocket error:', error);
-                updateStatus('OFFLINE');
-                setTimeout(connectWebSocket, 5000);
-            });
-        }
-
-        function disconnectWebSocket() {
-            if (stompClient !== null) {
-                stompClient.disconnect();
-            }
-        }
-
-        function updateUI(data) {
-            if (!data) return;
-
-            updateStatus(data.status || 'OFFLINE');
-            document.getElementById('lastUpdate').textContent = 'Cập nhật: ' + new Date().toLocaleTimeString('vi-VN');
-
-            const pump = (data.pump_state || data.pumpState) === 'ON';
-            document.getElementById('pumpSwitch').checked = pump;
-            document.getElementById('pumpStatus').textContent = 'Trạng thái: ' + (pump ? 'BẬT' : 'TẮT');
-
-            const mode = data.control_mode || data.controlMode || 'MANUAL';
-            document.getElementById('currentMode').textContent = mode;
-            updateModeButtons(mode);
-
-            if (data.sensors) {
-                const s = data.sensors;
-                
-                updateSensorValue('temp', s.temperature, 50);
-                updateSensorValue('humidity', s.air_humidity, 100);
-                updateSensorValue('light', s.light, 10000);
-                updateSensorValue('soil', s.soil_moisture, 100);
-
-                document.getElementById('quickTemp').textContent = (s.temperature || 0).toFixed(1) + ' °C';
-                document.getElementById('quickHumidity').textContent = (s.airHumidity || 0).toFixed(1) + ' %';
-                document.getElementById('quickLight').textContent = (s.light || 0).toFixed(0) + ' lx';
-                document.getElementById('quickSoil').textContent = (s.soilMoisture || 0).toFixed(1) + ' %';
-            }
-        }
-
-        function updateSensorValue(type, value, max) {
-            const val = value || 0;
-            const percentage = (val / max) * 100;
-            
-            document.getElementById(`${type}Value`).textContent = val.toFixed(type === 'light' ? 0 : 1);
-            document.getElementById(`${type}Bar`).style.width = Math.min(percentage, 100) + '%';
-        }
-
-        function updateStatus(status) {
-            const indicator = document.getElementById('statusIndicator');
-            const text = document.getElementById('statusText');
-            
-            if (status === 'ONLINE') {
-                indicator.innerHTML = `
-                    <span class="flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                    </span>
-                `;
-                text.textContent = 'Trực tuyến';
-                text.className = 'text-sm font-medium text-green-600';
             } else {
-                indicator.innerHTML = `
-                    <span class="flex h-3 w-3">
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
-                    </span>
-                `;
-                text.textContent = 'Ngoại tuyến';
-                text.className = 'text-sm font-medium text-gray-500';
+                // Nếu đang auto mà cố bấm, revert lại
+                e.target.checked = !e.target.checked;
+                alert("Vui lòng chuyển sang chế độ Thủ công (Manual) để điều khiển máy bơm.");
             }
-        }
-
-        function updateModeButtons(mode) {
-            const btnManual = document.getElementById('btnManual');
-            const btnAuto = document.getElementById('btnAuto');
-            
-            if (mode === 'MANUAL') {
-                btnManual.className = 'flex-1 px-4 py-2 border-2 border-green-500 bg-green-50 text-green-700 rounded-lg font-semibold';
-                btnAuto.className = 'flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-green-500 transition-colors';
-            } else {
-                btnManual.className = 'flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-green-500 transition-colors';
-                btnAuto.className = 'flex-1 px-4 py-2 border-2 border-green-500 bg-green-50 text-green-700 rounded-lg font-semibold';
-            }
-        }
-
-        async function controlPump(turnOn) {
-            const pumpMessage = document.getElementById('pumpMessage');
-            
-            try {
-                const response = await fetch(`/api/v1/devices/ESP32_GARDEN_001/command`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'CONTROL_PUMP',
-                        payload: {
-                            state: turnOn ? 'ON' : 'OFF'
-                        }
-                    })
-                });
-
-                const result = await response.json();
-                
-                // Cập nhật UI ngay lập tức
-                document.getElementById('pumpSwitch').checked = turnOn;
-                document.getElementById('pumpStatus').textContent = 'Trạng thái: ' + (turnOn ? 'BẬT' : 'TẮT');
-                
-                pumpMessage.textContent = `Lệnh ${turnOn ? 'BẬT' : 'TẮT'} máy bơm đã được gửi`;
-                pumpMessage.className = 'text-sm text-green-600 bg-green-50 p-3 rounded';
-                pumpMessage.classList.remove('hidden');
-                
-                setTimeout(() => {
-                    pumpMessage.classList.add('hidden');
-                }, 3000);
-            } catch (error) {
-                console.error('Error controlling pump:', error);
-                pumpMessage.textContent = 'Lỗi: ' + error.message;
-                pumpMessage.className = 'text-sm text-red-600 bg-red-50 p-3 rounded';
-                pumpMessage.classList.remove('hidden');
-                
-                document.getElementById('pumpSwitch').checked = !turnOn;
-            }
-        }
-
-        async function setControlMode(mode) {
-            try {
-                const response = await fetch(`/api/v1/devices/ESP32_GARDEN_001/command`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'SET_MODE',
-                        payload: {
-                            mode: mode
-                        }
-                    })
-                });
-
-                const result = await response.json();
-                console.log('Mode changed to:', mode);
-            } catch (error) {
-                console.error('Error changing mode:', error);
-            }
-        }
-
-        window.addEventListener('beforeunload', function() {
-            disconnectWebSocket();
         });
-    </script>
+
+        document.getElementById('btnManual').addEventListener('click', function() {
+            setControlMode('MANUAL');
+        });
+
+        document.getElementById('btnAuto').addEventListener('click', function() {
+            setControlMode('AUTO');
+        });
+    }
+
+    async function loadDevices() {
+        try {
+            const response = await fetch('/api/v1/devices');
+            const result = await response.json();
+
+            const selector = document.getElementById('deviceSelector');
+            selector.innerHTML = '';
+
+            if (result.data && result.data.length > 0) {
+                result.data.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceUid;
+                    option.textContent = `${device.name} (${device.deviceUid})`;
+                    selector.appendChild(option);
+                });
+                currentDeviceUid = result.data[0].deviceUid;
+                loadCurrentState();
+                loadThresholdSettings(); // Load config lần đầu
+            } else {
+                selector.innerHTML = '<option>Không có thiết bị</option>';
+            }
+        } catch (error) {
+            console.error('Error loading devices:', error);
+        }
+    }
+
+    async function loadCurrentState() {
+        try {
+            const response = await fetch(`/api/v1/devices/${currentDeviceUid}/state`);
+            const result = await response.json();
+            if (result.data) {
+                updateUI(result.data);
+            }
+        } catch (error) {
+            console.error('Error loading current state:', error);
+        }
+    }
+
+    // --- LOGIC HIỂN THỊ GIAO DIỆN THEO CHẾ ĐỘ ---
+    function updateModeUI(mode) {
+        currentMode = mode;
+
+        const btnManual = document.getElementById('btnManual');
+        const btnAuto = document.getElementById('btnAuto');
+
+        const manualControls = document.getElementById('manualControls');
+        const autoIndicator = document.getElementById('autoModeIndicator');
+        const automationConfig = document.getElementById('automationConfig'); // Phần config mới
+
+        // Reset style buttons
+        const activeClass = 'bg-white shadow text-green-700 font-bold border border-green-200';
+        const inactiveClass = 'text-gray-500 hover:bg-white hover:shadow-sm';
+
+        if (mode === 'MANUAL') {
+            btnManual.className = `flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 ${activeClass}`;
+            btnAuto.className = `flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 ${inactiveClass}`;
+
+            // Hiện controls, ẩn auto indicator
+            manualControls.classList.remove('hidden-smooth');
+            autoIndicator.classList.add('hidden-smooth');
+
+            // HIỆN phần cấu hình Threshold
+            automationConfig.classList.remove('hidden-smooth');
+            automationConfig.classList.add('fade-enter-active');
+
+            document.getElementById('pumpSwitch').disabled = false;
+
+        } else { // AUTO
+            btnAuto.className = `flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 ${activeClass}`;
+            btnManual.className = `flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 ${inactiveClass}`;
+
+            // Ẩn controls, hiện auto indicator
+            manualControls.classList.add('hidden-smooth');
+            autoIndicator.classList.remove('hidden-smooth');
+
+            // ẨN phần cấu hình Threshold
+            automationConfig.classList.add('hidden-smooth');
+
+            document.getElementById('pumpSwitch').disabled = true;
+        }
+
+        document.getElementById('currentMode').textContent = mode;
+    }
+
+    function updateUI(data) {
+        if (!data) return;
+
+        updateStatus(data.status || 'OFFLINE');
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('vi-VN');
+
+        // Cập nhật switch bơm
+        const pump = (data.pump_state || data.pumpState) === 'ON';
+        document.getElementById('pumpSwitch').checked = pump;
+        const pumpStatusEl = document.getElementById('pumpStatus');
+
+        if (pump) {
+            pumpStatusEl.textContent = 'Đang BẬT';
+            pumpStatusEl.className = 'text-sm font-bold text-green-600';
+        } else {
+            pumpStatusEl.textContent = 'Đang TẮT';
+            pumpStatusEl.className = 'text-sm text-gray-500';
+        }
+
+        // Cập nhật Mode và giao diện tương ứng
+        const mode = data.control_mode || data.controlMode || 'MANUAL';
+        updateModeUI(mode);
+
+        if (data.sensors) {
+            const s = data.sensors;
+            updateSensorDisplay('temp', s.temperature, 50, '°C');
+            updateSensorDisplay('humidity', s.airHumidity || s.air_humidity, 100, '%');
+            updateSensorDisplay('light', s.light, 5000, 'lx'); // Max light giả định 5000
+            updateSensorDisplay('soil', s.soilMoisture || s.soil_moisture, 100, '%');
+        }
+    }
+
+    function updateSensorDisplay(id, value, max, unit) {
+        const val = value !== undefined ? value : 0;
+        const percent = Math.min((val / max) * 100, 100);
+
+        // Update text
+        document.getElementById(`${id}Value`).textContent = val.toFixed(id === 'light' ? 0 : 1);
+
+        // Update bar width
+        document.getElementById(`${id}Bar`).style.width = `${percent}%`;
+    }
+
+    function updateStatus(status) {
+        const indicator = document.getElementById('statusIndicator');
+        const text = document.getElementById('statusText');
+
+        if (status === 'ONLINE') {
+            indicator.innerHTML = '<span class="flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>';
+            text.textContent = 'Trực tuyến';
+            text.className = 'text-sm font-semibold text-green-600';
+        } else {
+            indicator.innerHTML = '<span class="flex h-3 w-3"><span class="relative inline-flex rounded-full h-3 w-3 bg-gray-400"></span></span>';
+            text.textContent = 'Ngoại tuyến';
+            text.className = 'text-sm font-semibold text-gray-500';
+        }
+    }
+
+    // --- API CALLS ---
+
+    async function controlPump(turnOn) {
+        const pumpMessage = document.getElementById('pumpMessage');
+        pumpMessage.textContent = "Đang gửi lệnh...";
+        pumpMessage.className = "text-sm text-center p-2 rounded bg-yellow-50 text-yellow-700 block";
+        pumpMessage.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`/api/v1/devices/${currentDeviceUid}/command`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'CONTROL_PUMP',
+                    payload: { state: turnOn ? 'ON' : 'OFF' }
+                })
+            });
+
+            if(response.ok) {
+                pumpMessage.textContent = `Đã gửi lệnh ${turnOn ? 'BẬT' : 'TẮT'}`;
+                pumpMessage.className = "text-sm text-center p-2 rounded bg-green-50 text-green-700 block";
+            } else {
+                throw new Error("Server error");
+            }
+
+            setTimeout(() => { pumpMessage.classList.add('hidden'); }, 2000);
+        } catch (error) {
+            console.error('Error:', error);
+            pumpMessage.textContent = "Lỗi gửi lệnh!";
+            pumpMessage.className = "text-sm text-center p-2 rounded bg-red-50 text-red-700 block";
+            document.getElementById('pumpSwitch').checked = !turnOn; // Revert switch
+        }
+    }
+
+    async function setControlMode(mode) {
+        try {
+            await fetch(`/api/v1/devices/${currentDeviceUid}/command`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'SET_MODE',
+                    payload: { mode: mode }
+                })
+            });
+            // Không cần update UI ở đây vì WebSocket sẽ trả về state mới
+        } catch (error) {
+            console.error('Error changing mode:', error);
+            alert("Lỗi khi chuyển chế độ!");
+        }
+    }
+
+    // --- THRESHOLD SETTINGS LOGIC (Mới) ---
+
+    async function loadThresholdSettings() {
+        if (!currentDeviceUid) return;
+        try {
+            const res = await fetch(`/api/v1/thresholds/${currentDeviceUid}`);
+            const json = await res.json();
+            if (json.code === 200 && json.data) {
+                const data = json.data;
+                document.getElementById('thresholdActive').checked = data.isActive || false;
+                document.getElementById('minSoil').value = data.minSoilMoisture || 0;
+                document.getElementById('pumpDuration').value = data.maxPumpDurationSeconds || 10;
+            }
+        } catch (e) {
+            console.error("Lỗi tải cấu hình ngưỡng:", e);
+        }
+    }
+
+    async function saveThresholdSettings() {
+        const payload = {
+            device_uid: currentDeviceUid,
+            is_active: document.getElementById('thresholdActive').checked,
+            min_soil_moisture: parseFloat(document.getElementById('minSoil').value),
+            max_pump_duration_seconds: parseInt(document.getElementById('pumpDuration').value)
+        };
+
+        const msgEl = document.getElementById('configMsg');
+        msgEl.textContent = "Đang lưu...";
+        msgEl.className = "text-xs text-center mt-1 text-gray-500 font-medium";
+
+        try {
+            const res = await fetch('/api/v1/thresholds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.code === 200) {
+                msgEl.textContent = "Đã lưu thành công!";
+                msgEl.className = "text-xs text-center mt-1 text-green-600 font-bold";
+            } else {
+                throw new Error(json.message);
+            }
+        } catch (e) {
+            msgEl.textContent = "Lỗi: " + e.message;
+            msgEl.className = "text-xs text-center mt-1 text-red-600 font-bold";
+        }
+
+        setTimeout(() => { msgEl.textContent = ""; }, 3000);
+    }
+
+    // --- WEBSOCKET ---
+    function connectWebSocket() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null; // Tắt log debug đỡ rối
+
+        stompClient.connect({}, function(frame) {
+            console.log('WS Connected');
+            stompClient.subscribe(`/topic/device/${currentDeviceUid}`, function(message) {
+                const data = JSON.parse(message.body);
+                updateUI(data);
+            });
+        }, function(error) {
+            console.error('WS Error:', error);
+            setTimeout(connectWebSocket, 5000);
+        });
+    }
+
+    function disconnectWebSocket() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+    }
+
+    window.addEventListener('beforeunload', function() {
+        disconnectWebSocket();
+    });
+</script>
 </body>
 </html>

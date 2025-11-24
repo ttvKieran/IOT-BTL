@@ -18,7 +18,7 @@ public class MqttProcessingService {
     private final DeviceStateService deviceStateService; // Quản lý Redis Cache
     private final TelemetryService telemetryService;     // Lưu vào MySQL (Async)
     private final NotificationService notificationService; // Đẩy qua WebSocket
-
+    private final ThresholdService thresholdService;
     /**
      * ServiceActivator lắng nghe kênh "mqttInputChannel" đã cấu hình trong MqttConfig.
      * Đây là nơi tất cả tin nhắn thiết bị đến được xử lý.
@@ -47,6 +47,10 @@ public class MqttProcessingService {
             if ("telemetry".equals(messageType.toLowerCase())) {
                 // Phương thức này là @Async, không làm block thread MQTT hiện tại
                 telemetryService.saveTelemetryLog(updatedState);
+                // 2. KIỂM TRA NGƯỠNG VÀ TỰ ĐỘNG ĐIỀU KHIỂN (Logic Mới)
+                if (updatedState.getSensors() != null) {
+                    thresholdService.checkAndAutomate(deviceUid, updatedState.getSensors());
+                }
             }
             notificationService.broadcastDeviceUpdate(updatedState);
 
