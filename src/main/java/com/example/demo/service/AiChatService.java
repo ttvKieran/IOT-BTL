@@ -77,7 +77,7 @@ public class AiChatService {
                 .retrieve()
                 .body(PythonChatResponse.class);
 
-        notificationService.broadcastAIMessage(response.getTextContent());
+//        notificationService.broadcastAIMessage(response.getTextContent());
         if (response == null) {
             return "Lỗi: Không nhận được phản hồi từ AI service.";
         }
@@ -93,7 +93,7 @@ public class AiChatService {
         } else {
             // TRƯỜNG HỢP 1: AI (Python) trả lời bằng text
             log.info("AI requested text response.");
-            notificationService.broadcastAIMessage(response.getTextContent());
+//            notificationService.broadcastAIMessage(response.getTextContent());
             return response.getTextContent();
         }
     }
