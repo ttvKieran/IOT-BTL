@@ -33,4 +33,4 @@ AI/__pycache__/
 
 /AI/.env
 
-.env
+#.env

@@ -89,10 +89,14 @@ services:
         # (Các API Key nên được truyền vào đây)
       - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
     depends_on:
-      - mosquitto
-      - mysql
-      - redis
-      - python-ai
+        mysql:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+        mosquitto:
+            condition: service_started
+        python-ai:
+            condition: service_healthy
 
 volumes:
   mysql_data:
