@@ -11,7 +11,7 @@ services:
       dockerfile: Dockerfile
     # Không cần 'ports' vì chỉ Java mới gọi nó (gọi nội bộ)
     environment:
-      - GEMINI_API_KEY="" # Truyền API key vào
+      - GEMINI_API_KEY=${GEMINI_API_KEY} # Truyền API key vào
     networks:
       default:
   mosquitto:
@@ -84,8 +84,10 @@ services:
       - SPRING_REDIS_PORT=6379
       - MQTT_BROKER_URL=tcp://mosquitto:1883
       - AI_SERVICE_URL=http://python-ai:8000/chat
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
         # (Các API Key nên được truyền vào đây)
-      - OPENWEATHERMAP_API_KEY=e2af82a68f3bc2bb28f019259585fdad
+      - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
     depends_on:
       - mosquitto
       - mysql

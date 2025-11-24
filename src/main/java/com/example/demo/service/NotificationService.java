@@ -1,9 +1,14 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.DeviceStateDTO;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMailMessage;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,6 +18,11 @@ public class NotificationService {
 
     // SimpMessagingTemplate là thành phần cốt lõi để gửi tin nhắn qua WebSocket
     private final SimpMessagingTemplate messagingTemplate;
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
 
     /**
      * Gửi cập nhật trạng thái tức thời của thiết bị tới tất cả các client đã subscribe.
@@ -34,14 +44,26 @@ public class NotificationService {
         }
     }
 
+//    @Async
     public void broadcastAIMessage(String aiMessage) {
-        String destination = "/topic/ai/chat";
+        MimeMessage message = mailSender.createMimeMessage();
+        log.debug("Broadcasting AI Message to topic: {}", aiMessage);
         try {
-            // Gửi tin nhắn AI tới topic thong bao cho Admin
-            messagingTemplate.convertAndSend(destination, aiMessage);
-            log.debug("Broadcasted AI message to topic: {}", destination);
+
+            MimeMailMessage mimeMailMessage = new MimeMailMessage(message);
+            mimeMailMessage.setFrom(fromEmail);
+            mimeMailMessage.setTo("phucnd13524@gmail.com");
+            mimeMailMessage.setSubject("AI Notification");
+            mimeMailMessage.setText("" +
+                    "" +
+                    "Xin chào,\n\n" +
+                    "Đây là thông báo từ hệ thống AI của vườn thông minh:\n"
+            + aiMessage +
+                    "\n\nTrân trọng,\nHệ thống Vườn Thông Minh");
+            mailSender.send(mimeMailMessage.getMimeMessage());
+            log.info("AI notification email sent successfully.");
         } catch (Exception e) {
-            log.error("Failed to broadcast AI WebSocket message to {}: {}", destination, e.getMessage());
+            log.error("Failed to send AI notification email: {}", e.getMessage());
         }
     }
 }

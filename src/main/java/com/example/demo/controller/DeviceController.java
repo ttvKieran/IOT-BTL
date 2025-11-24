@@ -150,4 +150,15 @@ public class DeviceController {
                 .message("Device restored successfully.")
                 .build());
     }
+
+    @PostMapping(value = "/{deviceUid}/auto-off")
+    public ResponseEntity<ApiResponse<Void>> turnOffAutoMode(
+            @PathVariable String deviceUid,
+            @RequestParam boolean autoOff) {
+        deviceService.setAutoMode(deviceUid, autoOff);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .code(200)
+                .message("Auto mode updated successfully.")
+                .build());
+    }
 }

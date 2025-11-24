@@ -1,6 +1,7 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.DeviceDto;
+import com.example.demo.dto.DeviceStateDTO;
 import com.example.demo.exception.AppException;
 import com.example.demo.exception.ErrorCode;
 import com.example.demo.model.entity.DeviceEntity;
@@ -10,6 +11,8 @@ import com.example.demo.utils.mapper.DeviceMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
@@ -21,8 +24,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Service
 public class DeviceServiceImpl implements DeviceService {
+    private static final String REDIS_KEY_PREFIX = "device:autoMode:";
     private final DeviceRepository deviceRepository;
     private final DeviceMapper deviceMapper; // MapStruct Mapper
+    private final RedisTemplate<String, DeviceStateDTO> deviceStateRedisTemplate;
+
+
+    private String createKey(String deviceUid) {
+        return REDIS_KEY_PREFIX + deviceUid;
+    }
 
 
     /**
@@ -72,5 +82,18 @@ public class DeviceServiceImpl implements DeviceService {
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_NOT_FOUND));
         deviceRepository.restoreById(existingDevice.getId());
         deviceRepository.save(existingDevice);
+    }
+
+    @Override
+    public void setAutoMode(String deviceUid, boolean autoMode) {
+        String key = createKey(deviceUid);
+        log.info("setAutoMode");
+        DeviceEntity existingDevice = deviceRepository.findByDeviceUid(deviceUid)
+                .orElseThrow(() -> new AppException(ErrorCode.DEVICE_NOT_FOUND));
+        existingDevice.setAutoMode(autoMode);
+        deviceRepository.save(existingDevice);
+        deviceStateRedisTemplate.opsForValue().set(key, new DeviceStateDTO().builder().controlMode(autoMode == true ? "AUTO" : "MANUAL").build());
+
+        log.info("setAutoMode completed");
     }
 }

@@ -13,4 +13,5 @@ public interface DeviceService {
     public DeviceDto updateDevice(String deviceUid, DeviceDto deviceDto);
     public void softDeleteDevice(String deviceUid);
     public void restoreDevice(String deviceUid);
+    public void setAutoMode(String deviceUid, boolean autoMode);
 }

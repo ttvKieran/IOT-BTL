@@ -24,6 +24,7 @@ public class AiChatService {
     private final DeviceStateService deviceStateService; // Lấy context vườn (Redis)
     private final WeatherService weatherService;         // Lấy context thời tiết (API)
     private final CommandService commandService;         // Thực thi lệnh (MQTT)
+    private final NotificationService notificationService;
 
     // Client để gọi Python
     private final RestClient restClient;
@@ -32,12 +33,13 @@ public class AiChatService {
     // Tiêm (Inject) các service và cấu hình
     public AiChatService(DeviceStateService deviceStateService,
                          WeatherService weatherService,
-                         CommandService commandService,
+                         CommandService commandService, NotificationService notificationService,
                          RestClient.Builder restClientBuilder,
                          @Value("${ai.service-url}") String pythonApiUrl) {
         this.deviceStateService = deviceStateService;
         this.weatherService = weatherService;
         this.commandService = commandService;
+        this.notificationService = notificationService;
         this.restClient = restClientBuilder.build();
         this.pythonApiUrl = pythonApiUrl;
     }
@@ -75,17 +77,23 @@ public class AiChatService {
                 .retrieve()
                 .body(PythonChatResponse.class);
 
+        notificationService.broadcastAIMessage(response.getTextContent());
         if (response == null) {
             return "Lỗi: Không nhận được phản hồi từ AI service.";
         }
+
 
         // 4. XỬ LÝ PHẢN HỒI TỪ PYTHON
         if ("TOOL_CALL".equals(response.getResponseType())) {
             // TRƯỜNG HỢP 2: AI (Python) yêu cầu Java thực thi
             log.info("AI requested tool call: {}", response.getToolCall().getToolName());
+            notificationService.broadcastAIMessage(response.getToolCall().getToolName());
             return executeToolCall(response.getToolCall());
+
         } else {
             // TRƯỜNG HỢP 1: AI (Python) trả lời bằng text
+            log.info("AI requested text response.");
+            notificationService.broadcastAIMessage(response.getTextContent());
             return response.getTextContent();
         }
     }
@@ -123,10 +131,12 @@ public class AiChatService {
         // 4. XỬ LÝ PHẢN HỒI TỪ PYTHON
         if ("TOOL_CALL".equals(response.getResponseType())) {
             // TRƯỜNG HỢP 2: AI (Python) yêu cầu Java thực thi
-            log.info("AI requested tool call: {}", response.getToolCall().getToolName() + response.getToolCall().getArguments());
-            return "AI yêu cầu thực thi lệnh: " + response.getToolCall().getToolName() + response.getToolCall().getArguments();
+            log.info("AI requested tool call: {}", response.getToolCall().getToolName());
+            notificationService.broadcastAIMessage(response.getToolCall().getToolName());
+            return response.getTextContent();
         } else {
             // TRƯỜNG HỢP 1: AI (Python) trả lời bằng text
+            log.info("AI requested text response.");
             return response.getTextContent();
         }
     }

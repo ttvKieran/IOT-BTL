@@ -23,4 +23,7 @@ public class DeviceEntity extends BaseEntity{
 
     @Column(nullable = false, length = 255)
     private String name;
+
+    @Column(name = "auto_mode", nullable = false)
+    private boolean autoMode;
 }
