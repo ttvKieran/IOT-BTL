@@ -12,38 +12,65 @@
             height: 300px;
             width: 100%;
         }
+        body {
+            background-image: url('img/image copy.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(2px);
+            z-index: -1;
+        }
     </style>
 </head>
-<body class="bg-gray-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-green-600">🌱 Smart Garden</h1>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="/dashboard.html" class="px-4 py-2 bg-green-500 text-white rounded-lg">Dashboard</a>
-                    <a href="/control.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Điều khiển</a>
-                    <a href="/index.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">AI Chat</a>
+<body class="min-h-screen relative">
+    <!-- Navigation với gradient và glass effect -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-center h-20">
+                <a href="/home.html" class="flex items-center space-x-3 group">
+                    <div class="text-4xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">🌱</div>
+                    <h1 class="text-2xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
+                        Smart Garden
+                    </h1>
+                </a>
+                <div class="flex space-x-2">
+                    <a href="/dashboard.html" class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 font-semibold flex items-center gap-2">
+                        Dashboard
+                    </a>
+                    <a href="/control.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        Điều khiển
+                    </a>
+                    <a href="/index.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        AI Chat
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Device Selector -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <label class="text-sm font-medium text-gray-700">Chọn hehe thiết bị:</label>
-                    <select id="deviceSelector" class="ml-3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Device Selector với gradient -->
+        <div class="bg-gradient-to-r from-white to-gray-50 rounded-lg shadow-xl p-6 mb-8 border-2 border-gray-300">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <label class="text-sm font-bold text-gray-700 uppercase tracking-wide">Thiết bị:</label>
+                    <select id="deviceSelector" class="px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 font-medium bg-white shadow-sm hover:border-green-400 transition-all">
                         <option value="">Đang tải...</option>
                     </select>
                 </div>
-                <div class="flex space-x-2">
-                    <button id="btn1Day" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">1 Ngày</button>
-                    <button id="btn1Week" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">1 Tuần</button>
+                <div class="flex gap-3">
+                    <button id="btn1Day" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-bold">1 Ngày</button>
+                    <button id="btn1Week" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 shadow-md hover:shadow-lg transition-all font-bold">1 Tuần</button>
                 </div>
             </div>
         </div>
@@ -59,98 +86,85 @@
             <span id="errorText"></span>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- Statistics Cards với hiệu ứng gradient -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <!-- Temperature Card -->
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-gradient-to-br from-white to-red-50 rounded-lg shadow-xl p-6 border-t-4 border-red-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-red-100 text-red-600">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    <div class="p-4 rounded-2xl bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Nhiệt độ TB</p>
-                        <p class="text-2xl font-bold text-gray-900" id="avgTemp">-- °C</p>
+                        <p class="text-sm font-bold text-gray-600 uppercase tracking-wide">🌡️ Nhiệt độ TB</p>
+                        <p class="text-3xl font-extrabold text-gray-900" id="avgTemp">-- °C</p>
                     </div>
                 </div>
             </div>
 
             <!-- Humidity Card -->
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-xl p-6 border-t-4 border-blue-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                    <div class="p-4 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Độ ẩm KK TB</p>
-                        <p class="text-2xl font-bold text-gray-900" id="avgHumidity">-- %</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Light Card -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Ánh sáng TB</p>
-                        <p class="text-2xl font-bold text-gray-900" id="avgLight">-- lx</p>
+                        <p class="text-sm font-bold text-gray-600 uppercase tracking-wide">💧 Độ ẩm KK TB</p>
+                        <p class="text-3xl font-extrabold text-gray-900" id="avgHumidity">-- %</p>
                     </div>
                 </div>
             </div>
 
             <!-- Soil Moisture Card -->
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-gradient-to-br from-white to-green-50 rounded-lg shadow-xl p-6 border-t-4 border-green-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-green-100 text-green-600">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    <div class="p-4 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Độ ẩm đất TB</p>
-                        <p class="text-2xl font-bold text-gray-900" id="avgSoil">-- %</p>
+                        <p class="text-sm font-bold text-gray-600 uppercase tracking-wide">🌿 Độ ẩm đất TB</p>
+                        <p class="text-3xl font-extrabold text-gray-900" id="avgSoil">-- %</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Hàng 1: 2 biểu đồ -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- Temperature Chart -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Nhiệt độ (°C)</h3>
+            <div class="bg-gradient-to-br from-white to-red-50 rounded-lg shadow-xl p-6 border-t-4 border-red-500 hover:shadow-2xl transition-all duration-300">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="mr-2">🌡️</span> Nhiệt độ (°C)
+                </h3>
                 <div class="chart-container">
                     <canvas id="tempChart"></canvas>
                 </div>
             </div>
 
             <!-- Air Humidity Chart -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Độ ẩm không khí (%)</h3>
+            <div class="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-xl p-6 border-t-4 border-blue-500 hover:shadow-2xl transition-all duration-300">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="mr-2">💧</span> Độ ẩm không khí (%)
+                </h3>
                 <div class="chart-container">
                     <canvas id="humidityChart"></canvas>
                 </div>
             </div>
+        </div>
 
-            <!-- Light Chart -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Ánh sáng (lux)</h3>
-                <div class="chart-container">
-                    <canvas id="lightChart"></canvas>
-                </div>
-            </div>
-
+        <!-- Hàng 2: 1 biểu đồ căn giữa -->
+        <div class="flex justify-center">
             <!-- Soil Moisture Chart -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Độ ẩm đất (%)</h3>
+            <div class="bg-gradient-to-br from-white to-green-50 rounded-lg shadow-xl p-6 border-t-4 border-green-500 hover:shadow-2xl transition-all duration-300 w-full lg:w-1/2">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="mr-2">🌿</span> Độ ẩm đất (%)
+                </h3>
                 <div class="chart-container">
                     <canvas id="soilChart"></canvas>
                 </div>
@@ -202,7 +216,7 @@
 
         async function loadDevices() {
             try {
-                const response = await fetch('/api/v1/devices');
+                const response = await fetch('http://localhost:8080/api/v1/devices');
                 const result = await response.json();
                 
                 const selector = document.getElementById('deviceSelector');
@@ -232,7 +246,7 @@
 
             try {
                 const { from, to } = getTimeRange();
-                const url = `/api/v1/devices/ESP32_GARDEN_001/history?from=${from}&to=${to}`;
+                const url = `http://localhost:8080/api/v1/devices/ESP32_GARDEN_001/history?from=${from}&to=${to}`;
                 
                 const response = await fetch(url);
                 if (!response.ok) {
@@ -276,17 +290,14 @@
             const labels = data.map(d => formatDate(d.createdAt));
             const temps = data.map(d => d.temperature || 0);
             const humidity = data.map(d => d.air_humidity || d.airHumidity || 0);
-            const light = data.map(d => d.light_level || d.lightLevel || 0);
             const soil = data.map(d => d.soil_moisture || d.soilMoisture || 0);
 
             document.getElementById('avgTemp').textContent = calculateAvg(temps).toFixed(1) + ' °C';
             document.getElementById('avgHumidity').textContent = calculateAvg(humidity).toFixed(1) + ' %';
-            document.getElementById('avgLight').textContent = calculateAvg(light).toFixed(0) + ' lx';
             document.getElementById('avgSoil').textContent = calculateAvg(soil).toFixed(1) + ' %';
 
             createChart('tempChart', 'Nhiệt độ', labels, temps, 'rgb(239, 68, 68)');
             createChart('humidityChart', 'Độ ẩm KK', labels, humidity, 'rgb(59, 130, 246)');
-            createChart('lightChart', 'Ánh sáng', labels, light, 'rgb(250, 204, 21)');
             createChart('soilChart', 'Độ ẩm đất', labels, soil, 'rgb(34, 197, 94)');
         }
 
@@ -363,7 +374,6 @@
             
             document.getElementById('avgTemp').textContent = '-- °C';
             document.getElementById('avgHumidity').textContent = '-- %';
-            document.getElementById('avgLight').textContent = '-- lx';
             document.getElementById('avgSoil').textContent = '-- %';
         }
 

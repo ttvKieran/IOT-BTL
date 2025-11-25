@@ -5,32 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Garden - Hệ thống vườn thông minh</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-image: url('img/image copy 3.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(2px);
+            z-index: -1;
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-green-600">🌱 Smart Garden</h1>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="/home.html" class="px-4 py-2 bg-green-500 text-white rounded-lg">Trang chủ</a>
-                    <a href="/dashboard.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</a>
-                    <a href="/control.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Điều khiển</a>
-                    <a href="/index.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">AI Chat</a>
+<body class="min-h-screen relative">
+    <!-- Navigation với gradient và glass effect -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-center h-20">
+                <a href="/home.html" class="flex items-center space-x-3 group">
+                    <div class="text-4xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">🌱</div>
+                    <h1 class="text-2xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
+                        Smart Garden
+                    </h1>
+                </a>
+                <div class="flex space-x-2">
+                    <a href="/home.html" class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 font-semibold flex items-center gap-2">
+                        Trang chủ
+                    </a>
+                    <a href="/dashboard.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        Dashboard
+                    </a>
+                    <a href="/control.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        Điều khiển
+                    </a>
+                    <a href="/index.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        AI Chat
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white py-20">
+    <div class="py-20">
         <div class="max-w-7xl mx-auto px-4 text-center">
-            <h1 class="text-5xl font-bold mb-4">🌱 Smart Garden System</h1>
-            <p class="text-xl mb-8">Hệ thống quản lý vườn thông minh với IoT và AI</p>
+            <h1 class="text-5xl font-bold mb-4 text-gray-900">🌱 Smart Garden System</h1>
+            <p class="text-xl mb-8 text-gray-800">Hệ thống quản lý vườn thông minh với IoT và AI</p>
             <div class="flex justify-center space-x-4">
-                <a href="/dashboard.html" class="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                <a href="/dashboard.html" class="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition border-2 border-green-600">
                     Xem Dashboard
                 </a>
                 <a href="/control.html" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
@@ -54,7 +85,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 mb-2">Giám sát Real-time</h3>
-                    <p class="text-gray-600">Theo dõi nhiệt độ, độ ẩm, ánh sáng và độ ẩm đất theo thời gian thực qua WebSocket</p>
+                    <p class="text-gray-600">Theo dõi nhiệt độ, độ ẩm, ánh sáng và độ ẩm đất theo thời gian thực</p>
                 </div>
             </div>
 
@@ -119,14 +150,14 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 mb-2">IoT ESP32</h3>
-                    <p class="text-gray-600">Sử dụng ESP32 với cảm biến DHT11, BH1750, cảm biến độ ẩm đất</p>
+                    <p class="text-gray-600">Sử dụng ESP32 với cảm biến DHT11, cảm biến độ ẩm đất</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- System Status -->
-    <div class="bg-gray-50 py-16">
+    <!-- <div class="bg-gray-50 py-16">
         <div class="max-w-7xl mx-auto px-4">
             <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Trạng thái hệ thống</h2>
             
@@ -152,7 +183,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Call to Action -->
     <div class="bg-green-600 text-white py-16">
@@ -189,7 +220,7 @@
         // Load system status
         async function loadSystemStatus() {
             try {
-                const response = await fetch('/api/v1/devices');
+                const response = await fetch('http://localhost:8080/api/v1/devices');
                 const result = await response.json();
                 
                 if (result.data) {
@@ -198,7 +229,7 @@
                     let onlineCount = 0;
                     for (const device of result.data) {
                         try {
-                            const stateRes = await fetch(`/api/v1/devices/${device.deviceUid}/state`);
+                            const stateRes = await fetch(`http://localhost:8080/api/v1/devices/${device.deviceUid}/state`);
                             const stateResult = await stateRes.json();
                             if (stateResult.data && stateResult.data.status === 'ONLINE') {
                                 onlineCount++;

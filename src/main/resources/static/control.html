@@ -9,127 +9,148 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
         @keyframes pulse-ring {
-            0% {
-                transform: scale(0.33);
-            }
-            80%, 100% {
-                opacity: 0;
-            }
+            0% { transform: scale(0.33); }
+            80%, 100% { opacity: 0; }
         }
-
-        .status-online {
-            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-
+        .status-online { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        
         .switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 34px;
+            width: 64px;
+            height: 36px;
         }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
+        .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(145deg, #cbd5e1, #94a3b8);
             transition: .4s;
             border-radius: 34px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
         }
-
         .slider:before {
             position: absolute;
             content: "";
-            height: 26px;
-            width: 26px;
+            height: 28px;
+            width: 28px;
             left: 4px;
             bottom: 4px;
-            background-color: white;
+            background: white;
             transition: .4s;
             border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-
         input:checked + .slider {
-            background-color: #22c55e;
+            background: linear-gradient(145deg, #22c55e, #16a34a);
         }
-
         input:checked + .slider:before {
-            transform: translateX(26px);
+            transform: translateX(28px);
         }
-
-        .gauge {
+        input:focus + .slider {
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+        }
+        body {
+            background-image: url('img/image.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 200px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(2px);
+            z-index: -1;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-green-600">🌱 Smart Garden</h1>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="/dashboard.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</a>
-                    <a href="/control.html" class="px-4 py-2 bg-green-500 text-white rounded-lg">Điều khiển</a>
-                    <a href="/index.html" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">AI Chat</a>
+<body class="min-h-screen relative">
+    <!-- Navigation với gradient và glass effect -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-center h-20">
+                <a href="/home.html" class="flex items-center space-x-3 group">
+                    <div class="text-4xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">🌱</div>
+                    <h1 class="text-2xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
+                        Smart Garden
+                    </h1>
+                </a>
+                <div class="flex space-x-2">
+                    <a href="/dashboard.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        Dashboard
+                    </a>
+                    <a href="/control.html" class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 font-semibold flex items-center gap-2">
+                        Điều khiển
+                    </a>
+                    <a href="/index.html" class="px-5 py-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium flex items-center gap-2">
+                        AI Chat
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Device Selector & Status -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <label class="text-sm font-medium text-gray-700">Chọn h3h3 thiết bị:</label>
-                    <select id="deviceSelector" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Device Status Card với gradient -->
+        <div class="bg-gradient-to-r from-white to-gray-50 rounded-lg shadow-xl p-6 mb-8 border-2 border-gray-300">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <label class="text-sm font-bold text-gray-700 uppercase tracking-wide">Thiết bị:</label>
+                    <select id="deviceSelector" class="px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 font-medium bg-white shadow-sm hover:border-green-400 transition-all">
                         <option value="">Đang tải...</option>
                     </select>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <div id="statusIndicator" class="relative">
-                        <span class="flex h-3 w-3">
+                <div class="flex items-center gap-4">
+                    <div id="statusIndicator" class="relative flex items-center gap-3">
+                        <span class="flex h-4 w-4">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+                            <span class="relative inline-flex rounded-full h-4 w-4 bg-gray-500"></span>
                         </span>
+                        <span id="statusText" class="text-sm font-bold text-gray-600">Đang kết nối...</span>
                     </div>
-                    <span id="statusText" class="text-sm font-medium text-gray-500">Đang kết nối...</span>
-                    <span id="lastUpdate" class="text-xs text-gray-400 ml-2">--</span>
+                    <div class="h-8 w-px bg-gray-300"></div>
+                    <span id="lastUpdate" class="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1.5 rounded-full">--</span>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Control Panel -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Control Panel Sidebar -->
             <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6">Điều khiển</h2>
+                <div class="bg-white rounded-lg shadow-xl p-6 border-2 border-gray-300 sticky top-24">
+                    <h2 class="text-2xl font-extrabold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="text-3xl">⚙️</span> Điều khiển
+                    </h2>
 
-                    <!-- Pump Control -->
-                    <div class="mb-6 pb-6 border-b">
+                    <!-- Pump Control với design hiện đại -->
+                    <div class="mb-6 pb-6 border-b-2 border-gray-100">
                         <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                            <div class="flex items-center gap-4">
+                                <div class="p-4 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg">
+                                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-gray-800">Máy bơm</h3>
-                                    <p class="text-sm text-gray-500" id="pumpStatus">Trạng thái: --</p>
+                                    <h3 class="font-bold text-gray-800 text-lg">Máy bơm</h3>
+                                    <p class="text-sm text-gray-500 font-medium" id="pumpStatus">Trạng thái: --</p>
                                 </div>
                             </div>
                             <label class="switch">
@@ -137,147 +158,124 @@
                                 <span class="slider"></span>
                             </label>
                         </div>
-                        <div id="pumpMessage" class="text-sm text-gray-600 bg-gray-50 p-3 rounded hidden"></div>
+                        <div id="pumpMessage" class="text-sm font-medium bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 p-4 rounded-xl hidden shadow-sm"></div>
                     </div>
 
-                    <!-- Control Mode -->
+                    <!-- Control Mode với buttons gradient -->
                     <div class="mb-6">
-                        <h3 class="font-semibold text-gray-800 mb-3">Chế độ điều khiển</h3>
-                        <div class="flex space-x-2">
-                            <button id="btnManual" class="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-green-500 transition-colors">
+                        <h3 class="font-bold text-gray-800 mb-4 text-lg">Chế độ điều khiển</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="btnManual" class="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all font-bold uppercase text-sm shadow-sm">
                                 Manual
                             </button>
-                            <button id="btnAuto" class="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-green-500 transition-colors">
+                            <button id="btnAuto" class="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all font-bold uppercase text-sm shadow-sm">
                                 Auto
                             </button>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">
-                            Chế độ hiện tại: <span id="currentMode" class="font-semibold">--</span>
+                        <p class="text-xs text-gray-500 mt-3 text-center bg-gray-50 py-2 px-3 rounded-lg">
+                            Chế độ: <span id="currentMode" class="font-bold text-green-600">--</span>
                         </p>
                     </div>
 
-                    <!-- Quick Stats -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Thống kê nhanh</h4>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Nhiệt độ:</span>
-                                <span class="font-semibold" id="quickTemp">-- °C</span>
+                    <!-- Quick Stats với gradient cards -->
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                        <h4 class="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+                            <span>📊</span> Thống kê nhanh
+                        </h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                                <span class="text-gray-600 font-medium">Nhiệt độ:</span>
+                                <span class="font-bold text-red-600" id="quickTemp">-- °C</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Độ ẩm KK:</span>
-                                <span class="font-semibold" id="quickHumidity">-- %</span>
+                            <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                                <span class="text-gray-600 font-medium">Độ ẩm KK:</span>
+                                <span class="font-bold text-blue-600" id="quickHumidity">-- %</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Ánh sáng:</span>
-                                <span class="font-semibold" id="quickLight">-- lx</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Độ ẩm đất:</span>
-                                <span class="font-semibold" id="quickSoil">-- %</span>
+                            <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                                <span class="text-gray-600 font-medium">Độ ẩm đất:</span>
+                                <span class="font-bold text-green-600" id="quickSoil">-- %</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Real-time Sensors -->
-            <div class="lg:col-span-2">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Temperature -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Nhiệt độ</h3>
-                            <div class="p-2 rounded-full bg-red-100 text-red-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            <!-- Real-time Sensors với design card hiện đại -->
+            <div class="lg:col-span-3">
+                <!-- Hàng 1: 2 ô -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Temperature Card -->
+                    <div class="bg-gradient-to-br from-white to-red-50 rounded-lg shadow-xl p-6 border-t-4 border-red-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">🌡️ Nhiệt độ</h3>
+                            <div class="p-3 rounded-2xl bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
+                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                 </svg>
                             </div>
                         </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="tempValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">°C</p>
+                        <div class="text-center mb-6">
+                            <p class="text-6xl font-extrabold text-gray-900" id="tempValue">--</p>
+                            <p class="text-3xl text-red-500 mt-3 font-bold">°C</p>
                         </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="tempBar" class="bg-red-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        <div class="mt-5">
+                            <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner overflow-hidden">
+                                <div id="tempBar" class="bg-gradient-to-r from-red-400 to-red-600 h-3 rounded-full transition-all duration-500 shadow-lg" style="width: 0%"></div>
                             </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <div class="flex justify-between text-xs text-gray-600 mt-2 font-semibold">
                                 <span>0°C</span>
                                 <span>50°C</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Air Humidity -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Độ ẩm KK</h3>
-                            <div class="p-2 rounded-full bg-blue-100 text-blue-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                    <!-- Air Humidity Card -->
+                    <div class="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-xl p-6 border-t-4 border-blue-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">💧 Độ ẩm KK</h3>
+                            <div class="p-3 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg">
+                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
                                 </svg>
                             </div>
                         </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="humidityValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">%</p>
+                        <div class="text-center mb-6">
+                            <p class="text-6xl font-extrabold text-gray-900" id="humidityValue">--</p>
+                            <p class="text-3xl text-blue-500 mt-3 font-bold">%</p>
                         </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="humidityBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        <div class="mt-5">
+                            <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner overflow-hidden">
+                                <div id="humidityBar" class="bg-gradient-to-r from-blue-400 to-blue-600 h-3 rounded-full transition-all duration-500 shadow-lg" style="width: 0%"></div>
                             </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <div class="flex justify-between text-xs text-gray-600 mt-2 font-semibold">
                                 <span>0%</span>
                                 <span>100%</span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Light -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Ánh sáng</h3>
-                            <div class="p-2 rounded-full bg-yellow-100 text-yellow-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                <!-- Hàng 2: 1 ô căn giữa -->
+                <div class="flex justify-center">
+                    <!-- Soil Moisture Card -->
+                    <div class="bg-gradient-to-br from-white to-green-50 rounded-lg shadow-xl p-6 border-t-4 border-green-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full md:w-1/2">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">🌿 Độ ẩm đất</h3>
+                            <div class="p-3 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 shadow-lg">
+                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
                                 </svg>
                             </div>
                         </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="lightValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">lux</p>
+                        <div class="text-center mb-6">
+                            <p class="text-6xl font-extrabold text-gray-900" id="soilValue">--</p>
+                            <p class="text-3xl text-green-500 mt-3 font-bold">%</p>
                         </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="lightBar" class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        <div class="mt-5">
+                            <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner overflow-hidden">
+                                <div id="soilBar" class="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500 shadow-lg" style="width: 0%"></div>
                             </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>0 lx</span>
-                                <span>10000 lx</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Soil Moisture -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">Độ ẩm đất</h3>
-                            <div class="p-2 rounded-full bg-green-100 text-green-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-gray-900" id="soilValue">--</p>
-                            <p class="text-2xl text-gray-500 mt-2">%</p>
-                        </div>
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="soilBar" class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <div class="flex justify-between text-xs text-gray-600 mt-2 font-semibold">
                                 <span>0%</span>
                                 <span>100%</span>
                             </div>
@@ -322,7 +320,7 @@
 
         async function loadDevices() {
             try {
-                const response = await fetch('/api/v1/devices');
+                const response = await fetch('http://localhost:8080/api/v1/devices');
                 const result = await response.json();
                 
                 const selector = document.getElementById('deviceSelector');
@@ -347,7 +345,7 @@
 
         async function loadCurrentState() {
             try {
-                const response = await fetch(`/api/v1/devices/ESP32_GARDEN_001/state`);
+                const response = await fetch(`http://localhost:8080/api/v1/devices/ESP32_GARDEN_001/state`);
                 const result = await response.json();
                 
                 if (result.data) {
@@ -400,15 +398,18 @@
             if (data.sensors) {
                 const s = data.sensors;
                 
-                updateSensorValue('temp', s.temperature, 50);
-                updateSensorValue('humidity', s.air_humidity, 100);
-                updateSensorValue('light', s.light, 10000);
-                updateSensorValue('soil', s.soil_moisture, 100);
+                // Đọc với fallback cho cả snake_case và camelCase
+                const temp = s.temperature || 0;
+                const airHum = s.air_humidity || s.airHumidity || 0;
+                const soilMoist = s.soil_moisture || s.soilMoisture || 0;
+                
+                updateSensorValue('temp', temp, 50);
+                updateSensorValue('humidity', airHum, 100);
+                updateSensorValue('soil', soilMoist, 100);
 
-                document.getElementById('quickTemp').textContent = (s.temperature || 0).toFixed(1) + ' °C';
-                document.getElementById('quickHumidity').textContent = (s.airHumidity || 0).toFixed(1) + ' %';
-                document.getElementById('quickLight').textContent = (s.light || 0).toFixed(0) + ' lx';
-                document.getElementById('quickSoil').textContent = (s.soilMoisture || 0).toFixed(1) + ' %';
+                document.getElementById('quickTemp').textContent = temp.toFixed(1) + ' °C';
+                document.getElementById('quickHumidity').textContent = airHum.toFixed(1) + ' %';
+                document.getElementById('quickSoil').textContent = soilMoist.toFixed(1) + ' %';
             }
         }
 
@@ -461,7 +462,7 @@
             const pumpMessage = document.getElementById('pumpMessage');
             
             try {
-                const response = await fetch(`/api/v1/devices/ESP32_GARDEN_001/command`, {
+                const response = await fetch(`http://localhost:8080/api/v1/devices/ESP32_GARDEN_001/command`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -499,7 +500,7 @@
 
         async function setControlMode(mode) {
             try {
-                const response = await fetch(`/api/v1/devices/ESP32_GARDEN_001/command`, {
+                const response = await fetch(`http://localhost:8080/api/v1/devices/ESP32_GARDEN_001/command`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
