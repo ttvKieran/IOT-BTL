@@ -1,13 +1,7 @@
 services:
   python-ai:
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/docs" ]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     build:
-      context: ./AI # Đường dẫn đến thư mục chứa Dockerfile.python và ai_service.py
+      context: ./AI
       dockerfile: Dockerfile
     # Không cần 'ports' vì chỉ Java mới gọi nó (gọi nội bộ)
     environment:
@@ -90,13 +84,13 @@ services:
       - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
     depends_on:
         mysql:
-            condition: service_healthy
+            condition: service_started
         redis:
             condition: service_healthy
         mosquitto:
             condition: service_started
         python-ai:
-            condition: service_healthy
+            condition: service_started
 
 volumes:
   mysql_data:
