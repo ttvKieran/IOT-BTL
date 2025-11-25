@@ -84,6 +84,7 @@ public class DeviceServiceImpl implements DeviceService {
         deviceRepository.save(existingDevice);
     }
 
+    @Transactional
     @Override
     public void setAutoMode(String deviceUid, boolean autoMode) {
         String key = createKey(deviceUid);
@@ -92,7 +93,7 @@ public class DeviceServiceImpl implements DeviceService {
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_NOT_FOUND));
         existingDevice.setAutoMode(autoMode);
         deviceRepository.save(existingDevice);
-        deviceStateRedisTemplate.opsForValue().set(key, new DeviceStateDTO().builder().controlMode(autoMode == true ? "AUTO" : "MANUAL").build());
+        deviceStateRedisTemplate.opsForValue().set(key, DeviceStateDTO.builder().controlMode(autoMode ? "AUTO" : "MANUAL").build());
 
         log.info("setAutoMode completed");
     }

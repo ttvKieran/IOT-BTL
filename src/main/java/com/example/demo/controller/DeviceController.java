@@ -155,6 +155,7 @@ public class DeviceController {
     public ResponseEntity<ApiResponse<Void>> turnOffAutoMode(
             @PathVariable String deviceUid,
             @RequestParam boolean autoOff) {
+        log.info("Setting auto mode for device {}: {}", deviceUid, autoOff);
         deviceService.setAutoMode(deviceUid, autoOff);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .code(200)

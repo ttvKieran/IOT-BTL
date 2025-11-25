@@ -312,11 +312,11 @@
             });
 
             document.getElementById('btnManual').addEventListener('click', function() {
-                setControlMode('MANUAL');
+                changeControlMode('MANUAL');
             });
 
             document.getElementById('btnAuto').addEventListener('click', function() {
-                setControlMode('AUTO');
+                changeControlMode('AUTO');
             });
         }
 
@@ -342,6 +342,44 @@
                 }
             } catch (error) {
                 console.error('Error loading devices:', error);
+            }
+        }
+
+        // Hàm mới sử dụng API /auto-off
+        async function changeControlMode(mode) {
+            // 1. Xác định giá trị cho tham số 'autoOff'
+            const autoOffValue = (mode === 'AUTO') ? 'true' : 'false';
+
+            // Tạm thời cố định deviceUid, mặc dù nên dùng currentDeviceUid
+            const deviceUid = 'ESP32_GARDEN_001';
+            const endpoint = `/api/v1/devices/${deviceUid}/auto-off?autoOff=${autoOffValue}`;
+
+            try {
+                // 2. Gửi request POST
+                // Endpoint mới không cần request body, chỉ cần tham số query 'autoOff'
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // Thêm các header cần thiết khác nếu có (ví dụ: Authorization)
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.message || `API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log(`Mode changed to: ${mode}. API Response:`, result);
+
+                // Cập nhật UI ngay lập tức
+                document.getElementById('currentMode').textContent = mode;
+                updateModeButtons(mode);
+
+            } catch (error) {
+                console.error('Error changing control mode:', error);
+                alert(`Lỗi khi chuyển chế độ điều khiển sang ${mode}: ${error.message}`);
             }
         }
 
