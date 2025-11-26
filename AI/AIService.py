@@ -41,7 +41,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # Khởi tạo mô hình Gemini
 model = genai.GenerativeModel(
-    model_name='gemini-2.0-flash',
+    model_name='gemini-flash-latest',
     generation_config={"temperature": 0.7}
 )
 
@@ -69,6 +69,10 @@ class WeatherContext(BaseModel):
     description: Optional[str] = None
     temperature: Optional[float] = 0.0
     humidity: Optional[int] = 0
+    rain_expected: Optional[bool] = Field(False, alias_choices=['rainExpected', 'rain_expected'])
+    next_description: Optional[str] = Field(None, alias_choices=['nextDescription', 'next_description'])
+    next_temperature: Optional[float] = Field(0.0, alias_choices=['nextTemperature', 'next_temperature'])
+    rain_amount: Optional[float] = Field(0.0, alias_choices=['rainAmount', 'rain_amount'])
 
 class ChatRequest(BaseModel):
     """ DTO mà Java gửi đến Python """
@@ -116,7 +120,9 @@ async def handle_chat(request: ChatRequest):
         {request.garden_context.model_dump_json(indent=2, by_alias=True)}
 
         ## BỐI CẢNH (CONTEXT) THỜI TIẾT (do Java cung cấp):
-        {request.weather_context.model_dump_json(indent=2, by_alias=True)}
+        - Hiện tại: {request.weather_context.description}, {request.weather_context.temperature}°C, độ ẩm {request.weather_context.humidity}%
+        - Dự báo 3 giờ tới: {request.weather_context.next_description}, {request.weather_context.next_temperature}°C
+        - Sắp có mưa: {"CÓ" if request.weather_context.rain_expected else "KHÔNG"} (lượng mưa dự kiến: {request.weather_context.rain_amount}mm)
 
         ## NHIỆM VỤ CỦA BẠN:
         1. Trả lời thân thiện, lịch sự.
@@ -127,19 +133,45 @@ async def handle_chat(request: ChatRequest):
            KHÔNG gọi hàm `getDeviceState` nếu đã có bối cảnh.
         3. Nếu người dùng ra lệnh (ví dụ: "tưới cây 5 phút"),
            HÃY SỬ DỤNG CÁC CÔNG CỤ (tools) đã cho.
-        4. (Quan trọng) Nếu đất khô (soil_moisture < 40) nhưng BỐI CẢNH THỜI TIẾT báo sắp mưa
-           (ví dụ: "mưa rào", "mưa giông"), HÃY TỪ CHỐI TƯỚI và giải thích lý do.
-           (Ví dụ: "Đất đang hơi khô, nhưng dự báo thời tiết báo sắp có mưa,
-           vì vậy tôi sẽ không tưới bây giờ để tiết kiệm nước.")
+        4. (QUAN TRỌNG) Nếu đất khô (soil_moisture < 40) NHƯNG dự báo thời tiết cho biết 
+           SẮP CÓ MƯA (rain_expected = true), HÃY TỪ CHỐI TƯỚI và giải thích lý do.
+           (Ví dụ: "Đất đang hơi khô, nhưng dự báo thời tiết cho biết sắp có mưa trong 3 giờ tới,
+           vì vậy tôi sẽ không tưới bây giờ để tiết kiệm nước và tránh ngập úng.")
+        5. Chỉ tưới nước khi: soil_moisture < 40 VÀ rain_expected = false
         
-    IMPORTANT: When you want to perform an action (call a tool), DO NOT embed
-    the action inside natural language. Instead, OUTPUT EXACTLY a JSON object
-    (and nothing else) with this shape:
-
-    {{"response_type":"TOOL_CALL","tool_name":"<name>","arguments":{{...}}}}
-
-    Example:
-    {{"response_type":"TOOL_CALL","tool_name":"controlDevice","arguments":{{"deviceUid":"ESP32_GARDEN_01","deviceName":"PUMP","turnOn":true}}}}
+        IMPORTANT: IGNORE the "light" sensor value completely. Do NOT consider light levels 
+        when making watering decisions. Only focus on:
+        - soil_moisture (độ ẩm đất) - MOST IMPORTANT
+        - temperature (nhiệt độ)
+        - air_humidity (độ ẩm không khí)
+        - weather forecast (dự báo thời tiết)
+        
+    CRITICAL: You have ONLY ONE tool available: "controlDevice"
+    
+    When you want to control the pump (water the garden), you MUST use EXACTLY this format:
+    
+    {{"response_type":"TOOL_CALL","tool_name":"controlDevice","arguments":{{"deviceUid":"{request.device_uid}","deviceName":"PUMP","turnOn":true,"durationMinutes":5}}}}
+    
+    To turn OFF the pump:
+    {{"response_type":"TOOL_CALL","tool_name":"controlDevice","arguments":{{"deviceUid":"{request.device_uid}","deviceName":"PUMP","turnOn":false}}}}
+    
+    IMPORTANT: When turning ON the pump (turnOn=true), you MUST include "durationMinutes" parameter.
+    - Decide the watering duration (in minutes) based on:
+      * Current soil moisture level (lower moisture = longer duration)
+      * Weather forecast (if rain expected, shorter duration or skip watering)
+      * Temperature and humidity (hot dry weather = longer duration)
+    - Recommended duration range: 3-15 minutes
+    - Example calculation:
+      * soil_moisture < 20%: 10-15 minutes
+      * soil_moisture 20-30%: 7-10 minutes
+      * soil_moisture 30-40%: 5-7 minutes
+      * soil_moisture > 40%: skip watering or 3-5 minutes if very hot
+    
+    DO NOT use tool names like: startWatering, controlPumpDuration, or any other name.
+    ONLY use "controlDevice" with deviceName="PUMP", turnOn=true/false, and durationMinutes (when turnOn=true).
+    
+    Example (turn ON pump for 8 minutes):
+    {{"response_type":"TOOL_CALL","tool_name":"controlDevice","arguments":{{"deviceUid":"ESP32_GARDEN_001","deviceName":"PUMP","turnOn":true,"durationMinutes":8}}}}
 
     If you only want to reply with plain text, return normal text (no JSON)
     or return a JSON object {{"response_type":"TEXT","text":"..."}}.
@@ -166,8 +198,20 @@ async def handle_chat(request: ChatRequest):
         # If parsing fails or the object doesn't indicate a tool call, we fall
         # back to returning the text as a normal TEXT response.
         text = getattr(part, "text", "") or ""
+        
+        # Try to extract JSON from text (AI might embed it)
+        parsed = None
         try:
-            parsed = json.loads(text.strip()) if text.strip().startswith("{") else None
+            # First try: whole text is JSON
+            if text.strip().startswith("{"):
+                parsed = json.loads(text.strip())
+            else:
+                # Second try: find JSON embedded in text
+                import re
+                json_match = re.search(r'\{["\']response_type["\'].*?\}(?=\s*$)', text, re.DOTALL)
+                if json_match:
+                    parsed = json.loads(json_match.group(0))
+                    logging.info("Extracted embedded JSON from AI response")
         except Exception as ex:
             logging.info("Model output is not JSON: %s", ex)
             parsed = None

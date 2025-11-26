@@ -7,6 +7,7 @@ import com.example.demo.exception.ErrorCode;
 import com.example.demo.model.entity.DeviceEntity;
 import com.example.demo.repository.DeviceRepository;
 import com.example.demo.service.DeviceService;
+import com.example.demo.service.NotificationService;
 import com.example.demo.utils.mapper.DeviceMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class DeviceServiceImpl implements DeviceService {
     private final DeviceRepository deviceRepository;
     private final DeviceMapper deviceMapper; // MapStruct Mapper
     private final RedisTemplate<String, DeviceStateDTO> deviceStateRedisTemplate;
+    private final NotificationService notificationService;
 
 
     private String createKey(String deviceUid) {
@@ -87,14 +89,14 @@ public class DeviceServiceImpl implements DeviceService {
     @Transactional
     @Override
     public void setAutoMode(String deviceUid, boolean autoMode) {
-        String key = createKey(deviceUid);
-        log.info("setAutoMode");
+        log.info("setAutoMode for device {} to {}", deviceUid, autoMode);
+        
+        // Cập nhật DB
         DeviceEntity existingDevice = deviceRepository.findByDeviceUid(deviceUid)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_NOT_FOUND));
         existingDevice.setAutoMode(autoMode);
         deviceRepository.save(existingDevice);
-        deviceStateRedisTemplate.opsForValue().set(key, DeviceStateDTO.builder().controlMode(autoMode ? "AUTO" : "MANUAL").build());
-
-        log.info("setAutoMode completed");
+        
+        log.info("setAutoMode completed - saved to DB");
     }
 }

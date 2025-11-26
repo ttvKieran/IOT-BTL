@@ -52,11 +52,9 @@ public class MqttProcessingService {
             if ("telemetry".equals(messageType.toLowerCase())) {
                 // Phương thức này là @Async, không làm block thread MQTT hiện tại
                 telemetryService.saveTelemetryLog(updatedState);
-                // 2. KIỂM TRA NGƯỠNG VÀ TỰ ĐỘNG ĐIỀU KHIỂN (Logic Mới)
-                Optional<DeviceEntity> device = deviceRepository.findByDeviceUid(deviceUid);
-                if (updatedState.getSensors() != null && device.isPresent() && !device.get().isAutoMode()) {
-                    thresholdService.checkAndAutomate(deviceUid, updatedState.getSensors());
-                }
+                // REMOVED: Auto pump control in MANUAL mode
+                // MANUAL mode now only sends email alerts, no automatic pump control
+                // Auto pump control only works in AUTO mode (via AI)
             }
             notificationService.broadcastDeviceUpdate(updatedState);
 

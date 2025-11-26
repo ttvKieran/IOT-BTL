@@ -6,6 +6,7 @@ import com.example.demo.model.request.AiRequest;
 import com.example.demo.repository.DeviceRepository; // Cần để lấy location
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import java.util.HashMap;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,9 +87,14 @@ public class AiChatService {
         // 4. XỬ LÝ PHẢN HỒI TỪ PYTHON
         if ("TOOL_CALL".equals(response.getResponseType())) {
             // TRƯỜNG HỢP 2: AI (Python) yêu cầu Java thực thi
-            log.info("AI requested tool call: {}", response.getToolCall().getToolName());
-            notificationService.broadcastAIMessage(response.getToolCall().getToolName());
-            return executeToolCall(response.getToolCall());
+            // Trong MANUAL mode (getChatResponse), CHỈ GỬI EMAIL, KHÔNG EXECUTE
+            log.info("AI requested tool call (MANUAL mode - email only): {}", response.getToolCall().getToolName());
+            
+            // Gửi email thông báo AI muốn bật thiết bị (có đầy đủ context)
+            String emailContent = buildEmailContentFromToolCall(response.getToolCall(), gardenContext, weatherContext);
+            notificationService.broadcastAIMessage(emailContent);
+            
+            return "Đã gửi email thông báo: " + emailContent;
 
         } else {
             // TRƯỜNG HỢP 1: AI (Python) trả lời bằng text
@@ -133,7 +139,7 @@ public class AiChatService {
             // TRƯỜNG HỢP 2: AI (Python) yêu cầu Java thực thi
             log.info("AI requested tool call: {}", response.getToolCall().getToolName());
             notificationService.broadcastAIMessage(response.getToolCall().getToolName());
-            return response.getTextContent();
+            return executeToolCall(response.getToolCall());
         } else {
             // TRƯỜNG HỢP 1: AI (Python) trả lời bằng text
             log.info("AI requested text response.");
@@ -150,17 +156,48 @@ public class AiChatService {
         if ("controlDevice".equals(toolCall.getToolName())) {
             Map<String, Object> args = toolCall.getArguments();
             try {
+                // Log toàn bộ arguments để debug
+                log.info("AI tool call arguments: {}", args);
+                
                 // Lấy các tham số từ AI
                 String deviceUid = (String) args.get("deviceUid");
                 String deviceName = (String) args.get("deviceName");
-                boolean turnOn = (Boolean) args.get("turnOn");
+                Object turnOnObj = args.get("turnOn");
+                
+                if (deviceUid == null || deviceName == null || turnOnObj == null) {
+                    log.error("Missing required arguments. deviceUid={}, deviceName={}, turnOn={}", deviceUid, deviceName, turnOnObj);
+                    return "Lỗi: AI không cung cấp đầy đủ tham số (deviceUid, deviceName, turnOn)";
+                }
+                
+                boolean turnOn = Boolean.TRUE.equals(turnOnObj);
+
+                // Lấy duration nếu có (AI sẽ gửi durationMinutes khi bật máy bơm)
+                Integer durationMinutes = null;
+                if (args.containsKey("durationMinutes")) {
+                    Object durationObj = args.get("durationMinutes");
+                    if (durationObj instanceof Integer) {
+                        durationMinutes = (Integer) durationObj;
+                    } else if (durationObj instanceof Double) {
+                        durationMinutes = ((Double) durationObj).intValue();
+                    }
+                }
 
                 // Chuyển đổi DTO (Python) sang DTO (Java MQTT)
-                Map<String , Object> payloadMap = Map.of("status", turnOn ? "ON" : "OFF");
+                // Tạo payload linh động giống ThresholdService
+                Map<String, Object> payloadMap = new HashMap<>();
+                payloadMap.put("state", turnOn ? "ON" : "OFF");
+                
+                // Chỉ gửi kèm 'time' nếu là lệnh ON và có thời gian > 0
+                // ESP32 nhận 'time' tính bằng GIÂY
+                if (turnOn && durationMinutes != null && durationMinutes > 0) {
+                    int durationSeconds = durationMinutes * 60;
+                    payloadMap.put("time", durationSeconds);
+                    log.info("AI decided watering duration: {} minutes ({} seconds)", durationMinutes, durationSeconds);
+                }
 
                 CommandRequestDTO command = new CommandRequestDTO();
                 if ("PUMP".equalsIgnoreCase(deviceName)) {
-                    command.setAction("SET_PUMP");
+                    command.setAction("CONTROL_PUMP");
                 } else if ("LIGHT".equalsIgnoreCase(deviceName)) {
                     command.setAction("SET_LIGHT"); // Giả sử firmware có hỗ trợ
                 } else {
@@ -171,6 +208,8 @@ public class AiChatService {
 
                 // GỌI MQTT SERVICE (Java)
                 commandService.sendCommand(deviceUid, command);
+                
+                log.info("✅ Successfully sent {} command to {}", turnOn ? "ON" : "OFF", deviceName);
 
                 return "Đã rõ! Tôi đã gửi lệnh " + (turnOn ? "bật" : "tắt") + " " + deviceName + ".";
 
@@ -181,6 +220,134 @@ public class AiChatService {
         }
 
         return "Lỗi: AI yêu cầu một công cụ không được hỗ trợ: " + toolCall.getToolName();
+    }
+
+    /**
+     * Tạo nội dung email chi tiết từ tool call để gửi cho user
+     */
+    private String buildEmailContentFromToolCall(ToolCall toolCall, DeviceStateDTO gardenContext, WeatherService.WeatherForecast weatherContext) {
+        StringBuilder emailContent = new StringBuilder();
+        
+        // Header email
+        emailContent.append("🌱 THÔNG BÁO TỪ HỆ THỐNG VƯỜN THÔNG MINH\n");
+        emailContent.append("=" .repeat(60)).append("\n\n");
+        
+        if ("controlDevice".equals(toolCall.getToolName())) {
+            String deviceName = (String) toolCall.getArguments().get("deviceName");
+            Boolean turnOn = (Boolean) toolCall.getArguments().get("turnOn");
+            String action = turnOn ? "BẬT" : "TẮT";
+            
+            emailContent.append("⚠️ CẢNH BÁO: HỆ THỐNG AI PHÁT HIỆN CẦN CAN THIỆP\n\n");
+            emailContent.append("📋 THÔNG TIN THIẾT BỊ:\n");
+            emailContent.append(String.format("   • Thiết bị: %s\n", deviceName));
+            emailContent.append(String.format("   • Hành động khuyến nghị: %s\n", action));
+            emailContent.append(String.format("   • Thời gian: %s\n\n", java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
+            
+            // Thông tin cảm biến hiện tại
+            emailContent.append("📊 TRẠNG THÁI CẢM BIẾN HIỆN TẠI:\n");
+            if (gardenContext != null && gardenContext.getSensors() != null) {
+                emailContent.append(String.format("   • Nhiệt độ: %.1f°C\n", gardenContext.getSensors().getTemperature()));
+                emailContent.append(String.format("   • Độ ẩm không khí: %.1f%%\n", gardenContext.getSensors().getAirHumidity()));
+                emailContent.append(String.format("   • Độ ẩm đất: %.1f%%\n", gardenContext.getSensors().getSoilMoisture()));
+                emailContent.append(String.format("   • Ánh sáng: %.1f lux\n\n", gardenContext.getSensors().getLight()));
+            }
+            
+            // Thông tin thời tiết
+            if (weatherContext != null) {
+                emailContent.append("🌤️ THÔNG TIN THỜI TIẾT:\n");
+                emailContent.append(String.format("   • Hiện tại: %s, %.1f°C\n", weatherContext.getDescription(), weatherContext.getTemperature()));
+                emailContent.append(String.format("   • Độ ẩm không khí: %d%%\n", weatherContext.getHumidity()));
+                emailContent.append(String.format("   • Dự báo 3h tới: %s, %.1f°C\n", weatherContext.getNextDescription(), weatherContext.getNextTemperature()));
+                if (weatherContext.isRainExpected()) {
+                    emailContent.append(String.format("   • ⚠️ Sắp có mưa (lượng mưa dự kiến: %.1fmm)\n\n", weatherContext.getRainAmount()));
+                } else {
+                    emailContent.append("   • ✅ Không có mưa trong 3 giờ tới\n\n");
+                }
+            }
+            
+            // Lý do và hướng dẫn
+            emailContent.append("💡 LÝ DO:\n");
+            emailContent.append("   Hệ thống AI phân tích dữ liệu cảm biến và thời tiết,\n");
+            emailContent.append("   phát hiện cây trồng cần được tưới nước để đảm bảo phát triển tốt.\n\n");
+            
+            emailContent.append("⚙️ CHẾ ĐỘ HOẠT ĐỘNG:\n");
+            emailContent.append("   • Chế độ hiện tại: MANUAL (Thủ công)\n");
+            emailContent.append("   • Hệ thống KHÔNG tự động thực hiện hành động\n");
+            emailContent.append("   • Yêu cầu xác nhận và thực hiện thủ công\n\n");
+            
+            emailContent.append("📱 HƯỚNG DẪN:\n");
+            emailContent.append("   1. Kiểm tra điều kiện thực tế của vườn\n");
+            emailContent.append("   2. Đăng nhập vào ứng dụng để điều khiển thiết bị\n");
+            emailContent.append(String.format("   3. %s %s nếu cần thiết\n\n", action, deviceName));
+            
+            emailContent.append("ℹ️ GHI CHÚ:\n");
+            emailContent.append("   Để hệ thống tự động thực hiện, hãy chuyển sang chế độ AUTO\n");
+            emailContent.append("   trong cài đặt ứng dụng.\n\n");
+            
+        } else if ("controlPumpDuration".equals(toolCall.getToolName())) {
+            Integer durationMinutes = (Integer) toolCall.getArguments().get("durationMinutes");
+            
+            emailContent.append("⚠️ CẢNH BÁO: CẦN TƯỚI NƯỚC CHO CÂY TRỒNG\n\n");
+            emailContent.append("📋 THÔNG TIN TƯỚI NƯỚC:\n");
+            emailContent.append(String.format("   • Hành động: BẬT MÁY BỠM TƯỚI NƯỚC\n"));
+            emailContent.append(String.format("   • Thời gian đề xuất: %d phút\n", durationMinutes));
+            emailContent.append(String.format("   • Thời điểm: %s\n\n", java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
+            
+            // Thông tin cảm biến hiện tại
+            emailContent.append("📊 TRẠNG THÁI CẢM BIẾN HIỆN TẠI:\n");
+            if (gardenContext != null && gardenContext.getSensors() != null) {
+                emailContent.append(String.format("   • Nhiệt độ: %.1f°C\n", gardenContext.getSensors().getTemperature()));
+                emailContent.append(String.format("   • Độ ẩm không khí: %.1f%%\n", gardenContext.getSensors().getAirHumidity()));
+                emailContent.append(String.format("   • Độ ẩm đất: %.1f%% ⚠️\n", gardenContext.getSensors().getSoilMoisture()));
+                emailContent.append(String.format("   • Ánh sáng: %.1f lux\n\n", gardenContext.getSensors().getLight()));
+            }
+            
+            // Thông tin thời tiết
+            if (weatherContext != null) {
+                emailContent.append("🌤️ THÔNG TIN THỜI TIẾT:\n");
+                emailContent.append(String.format("   • Hiện tại: %s, %.1f°C\n", weatherContext.getDescription(), weatherContext.getTemperature()));
+                emailContent.append(String.format("   • Độ ẩm không khí: %d%%\n", weatherContext.getHumidity()));
+                emailContent.append(String.format("   • Dự báo 3h tới: %s, %.1f°C\n", weatherContext.getNextDescription(), weatherContext.getNextTemperature()));
+                if (weatherContext.isRainExpected()) {
+                    emailContent.append(String.format("   • ⚠️ Sắp có mưa (lượng mưa dự kiến: %.1fmm)\n\n", weatherContext.getRainAmount()));
+                } else {
+                    emailContent.append("   • ✅ Không có mưa trong 3 giờ tới\n\n");
+                }
+            }
+            
+            // Lý do và hướng dẫn
+            emailContent.append("💡 PHÂN TÍCH CỦA AI:\n");
+            emailContent.append("   • Độ ẩm đất thấp hơn ngưỡng tối ưu\n");
+            emailContent.append("   • Điều kiện thời tiết không có mưa trong thời gian tới\n");
+            emailContent.append("   • Cây trồng cần được bổ sung nước để phát triển\n\n");
+            
+            emailContent.append("⚙️ CHẾ ĐỘ HOẠT ĐỘNG:\n");
+            emailContent.append("   • Chế độ hiện tại: MANUAL (Thủ công)\n");
+            emailContent.append("   • Hệ thống KHÔNG tự động bật máy bơm\n");
+            emailContent.append("   • Yêu cầu xác nhận từ người dùng\n\n");
+            
+            emailContent.append("📱 HƯỚNG DẪN THỰC HIỆN:\n");
+            emailContent.append("   1. Kiểm tra trực tiếp độ ẩm đất tại vườn\n");
+            emailContent.append("   2. Đăng nhập vào ứng dụng Smart Garden\n");
+            emailContent.append("   3. Vào phần Điều khiển > Máy bơm\n");
+            emailContent.append(String.format("   4. Bật máy bơm và đặt timer %d phút\n\n", durationMinutes));
+            
+            emailContent.append("⏰ LƯU Ý:\n");
+            emailContent.append(String.format("   • Nên tưới vào buổi sáng sớm hoặc chiều mát\n"));
+            emailContent.append(String.format("   • Kiểm tra lại sau %d phút để tránh tưới quá nhiều\n", durationMinutes));
+            emailContent.append("   • Để tự động hóa, chuyển sang chế độ AUTO\n\n");
+        } else {
+            emailContent.append("⚠️ THÔNG BÁO TỪ HỆ THỐNG AI\n\n");
+            emailContent.append(String.format("   AI yêu cầu thực hiện: %s\n\n", toolCall.getToolName()));
+        }
+        
+        // Footer
+        emailContent.append("─".repeat(60)).append("\n");
+        emailContent.append("📧 Email tự động từ Smart Garden System\n");
+        emailContent.append("🔗 Truy cập: http://localhost:3000\n");
+        emailContent.append("⚙️ Cài đặt thông báo tại mục Settings trong ứng dụng\n");
+        
+        return emailContent.toString();
     }
 
 

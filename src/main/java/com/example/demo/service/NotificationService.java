@@ -52,7 +52,7 @@ public class NotificationService {
 
             MimeMailMessage mimeMailMessage = new MimeMailMessage(message);
             mimeMailMessage.setFrom(fromEmail);
-            mimeMailMessage.setTo("phucnd13524@gmail.com");
+            mimeMailMessage.setTo("tatruongvu1708@gmail.com");
             mimeMailMessage.setSubject("AI Notification");
             mimeMailMessage.setText("" +
                     "" +

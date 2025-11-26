@@ -136,7 +136,7 @@
             <div class="lg:col-span-1">
                 <div class="bg-white rounded-lg shadow-xl p-6 border-2 border-gray-300 sticky top-24">
                     <h2 class="text-2xl font-extrabold text-gray-800 mb-6 flex items-center gap-3">
-                        <span class="text-3xl">⚙️</span> Điều khiển
+                        <span class="text-3xl">⚙️</span> Điều khiển thiết bị
                     </h2>
 
                     <!-- Pump Control với design hiện đại -->
@@ -395,19 +395,35 @@
         }
 
         function connectWebSocket() {
-            const socket = new SockJS('/ws');
+            const socket = new SockJS('http://localhost:8080/ws');
             stompClient = Stomp.over(socket);
             
+            // Enable debug logging
+            stompClient.debug = function(str) {
+                console.log('[STOMP Debug]', str);
+            };
+            
             stompClient.connect({}, function(frame) {
-                console.log('Connected to WebSocket');
+                console.log('✅ Connected to WebSocket', frame);
                 updateStatus('ONLINE');
                 
-                stompClient.subscribe(`/topic/device/ESP32_GARDEN_001`, function(message) {
-                    const data = JSON.parse(message.body);
-                    updateUI(data);
+                const topic = `/topic/device/ESP32_GARDEN_001`;
+                console.log('📡 Subscribing to:', topic);
+                
+                const subscription = stompClient.subscribe(topic, function(message) {
+                    console.log('📩 Message received:', message.body);
+                    try {
+                        const data = JSON.parse(message.body);
+                        console.log('📊 Parsed data:', data);
+                        updateUI(data);
+                    } catch (e) {
+                        console.error('❌ Parse error:', e, message.body);
+                    }
                 });
+                
+                console.log('✅ Subscribed successfully, subscription id:', subscription.id);
             }, function(error) {
-                console.error('WebSocket error:', error);
+                console.error('❌ WebSocket error:', error);
                 updateStatus('OFFLINE');
                 setTimeout(connectWebSocket, 5000);
             });
@@ -561,6 +577,14 @@
         window.addEventListener('beforeunload', function() {
             disconnectWebSocket();
         });
+
+        // Polling fallback: Cập nhật state mỗi 3 giây để đảm bảo UI luôn có dữ liệu mới
+        // ngay cả khi WebSocket không hoạt động
+        setInterval(function() {
+            loadCurrentState();
+        }, 3000);
+        
+        console.log('🔄 Polling fallback enabled: updating every 3 seconds');
     </script>
 </body>
 </html>

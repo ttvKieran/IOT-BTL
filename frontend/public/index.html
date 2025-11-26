@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10b981" />
+    <meta name="description" content="Smart Garden IoT Control System" />
+    <title>Smart Garden - IoT Control System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+
+        /* Custom scrollbar */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thumb-purple-300::-webkit-scrollbar-thumb {
+            background: rgb(216, 180, 254);
+            border-radius: 9999px;
+        }
+
+        .scrollbar-thumb-purple-300::-webkit-scrollbar-thumb:hover {
+            background: rgb(192, 132, 252);
+        }
+
+        /* Smooth scroll */
+        .scrollbar-thin {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+</body>
+</html>

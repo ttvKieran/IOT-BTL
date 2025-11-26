@@ -1,7 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.DeviceStateDTO;
+import com.example.demo.model.entity.DeviceEntity;
 import com.example.demo.model.entity.TelemetryLog;
+import com.example.demo.repository.DeviceRepository;
 import com.example.demo.repository.TelemetryRepository;
 import com.example.demo.utils.mapper.TelemetryMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,6 +21,7 @@ import java.util.Optional;
 public class DeviceStateService {
     private final RedisTemplate<String, DeviceStateDTO> deviceStateRedisTemplate;
     private final ObjectMapper objectMapper; // Dùng để parse JSON payload từ MQTT
+    private final DeviceRepository deviceRepository;
     TelemetryRepository telemetryRepository;
     TelemetryMapper telemetryMapper;
 
@@ -32,6 +35,7 @@ public class DeviceStateService {
 
     /**
      * 1. Lấy trạng thái tức thời của thiết bị từ Redis.
+     * 2. Lấy control_mode từ DB để đảm bảo đồng bộ.
      */
     public DeviceStateDTO getState(String deviceUid) {
         String key = createKey(deviceUid);
@@ -44,10 +48,21 @@ public class DeviceStateService {
             state.setStatus("offline");
             state.setSensors(new DeviceStateDTO.SensorData());
             log.debug("No existing state in Redis for deviceUid={}. Returning default state: {}", deviceUid, state);
-            return state;
         }
 
-        log.debug("Retrieved device state from Redis for deviceUid={}: {}", deviceUid, state);
+        // Luôn lấy control_mode từ DB để đảm bảo đồng bộ
+        try {
+            Optional<DeviceEntity> deviceOpt = deviceRepository.findByDeviceUid(deviceUid);
+            if (deviceOpt.isPresent()) {
+                DeviceEntity device = deviceOpt.get();
+                state.setControlMode(device.isAutoMode() ? "AUTO" : "MANUAL");
+                log.debug("Retrieved control_mode from DB: {}", state.getControlMode());
+            }
+        } catch (Exception e) {
+            log.error("Failed to get control_mode from DB for deviceUid={}: {}", deviceUid, e.getMessage());
+        }
+
+        log.debug("Retrieved device state for deviceUid={}: {}", deviceUid, state);
         return state;
     }
 

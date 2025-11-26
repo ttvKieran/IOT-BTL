@@ -19,7 +19,9 @@ public class TestNotificationController {
     public ResponseEntity<?> sendTestNotification(@RequestParam String messange) {
         // Logic to send a test notification to the device with the given UID
         // This is a placeholder for the actual implementation
+        System.out.println("===== TEST CONTROLLER CALLED with message: " + messange);
         notificationService.broadcastAIMessage(messange);
+        System.out.println("===== broadcastAIMessage() completed");
         return ResponseEntity.ok("Test notification sent to all devices.");
 
     }

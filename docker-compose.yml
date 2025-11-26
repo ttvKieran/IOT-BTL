@@ -69,6 +69,8 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    volumes:
+      - ./src/main/resources/static:/app/static:ro
     environment:
       - TZ=Asia/Ho_Chi_Minh
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/iot_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
