@@ -255,7 +255,7 @@ GardenAutomationService.runProactiveAutomation()
          ▼            ▼
     analysis()    getChatResponse()
          │            │
-         │            └──► Call Python AI ──► Gemini
+         │            └──► Call Python AI
          │                      │
          │                      ├──► If TOOL_CALL: Send Email ONLY
          │                      └──► No execution
