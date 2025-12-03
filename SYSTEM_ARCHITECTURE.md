@@ -260,7 +260,7 @@ GardenAutomationService.runProactiveAutomation()
          │                      ├──► If TOOL_CALL: Send Email ONLY
          │                      └──► No execution
          │
-         └──► Call Python AI ──► Gemini
+         └──► Call Python AI
                     │
                     ├──► If TOOL_CALL:
                     │    ├─► Execute command (CommandService)
