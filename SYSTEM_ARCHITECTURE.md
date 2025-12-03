@@ -278,13 +278,13 @@ GardenAutomationService.runProactiveAutomation()
 
 React Frontend (Control.js)
          │
-         ├──► User clicks "Bật máy bơm 10 phút"
+         ├──► User clicks "Bật máy bơm"
          │
          ▼
 POST /api/v1/devices/ESP32_GARDEN_001/command
 Body: {
   "action": "CONTROL_PUMP",
-  "payload": {"state": "ON", "time": 600}
+  "payload": {"state": "ON"}
 }
          │
          ▼
@@ -304,7 +304,6 @@ ESP32 receives command
          │
          ├──► Turn ON relay (GPIO 26 = LOW)
          ├──► Water pump starts
-         ├──► Set timer for 600 seconds
          └──► Auto turn OFF after timer expires
 
 
