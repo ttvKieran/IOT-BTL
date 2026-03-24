@@ -1,310 +1,429 @@
-# 🌱 Smart Garden - Frontend Guide
+# Architecture Diagrams - Tech Device E-Commerce Microservices
 
-## 📄 Các trang có sẵn
-
-### 1. **Trang chủ** (`/home.html`)
-- Giới thiệu tổng quan về hệ thống
-- Hiển thị các tính năng nổi bật
-- Trạng thái hệ thống (số thiết bị, thiết bị online)
-- Link nhanh đến các chức năng
-
-**URL**: http://localhost:8080/home.html
+Tài liệu này chứa các biểu đồ kiến trúc được vẽ bằng Mermaid.js.
 
 ---
 
-### 2. **Dashboard** (`/dashboard.html`)
-📊 Xem biểu đồ và thống kê dữ liệu từ database
+## 1. System Architecture Overview
 
-**Tính năng:**
-- ✅ Chọn thiết bị từ danh sách
-- ✅ Xem dữ liệu theo **1 ngày** hoặc **1 tuần**
-- ✅ 4 thống kê nhanh: Nhiệt độ TB, Độ ẩm TB, Ánh sáng TB, Độ ẩm đất TB
-- ✅ 4 biểu đồ line chart (Chart.js):
-  - Nhiệt độ (°C)
-  - Độ ẩm không khí (%)
-  - Ánh sáng (lux)
-  - Độ ẩm đất (%)
-
-**API sử dụng:**
-- `GET /api/v1/devices` - Lấy danh sách thiết bị
-- `GET /api/v1/devices/{deviceUid}/history?from={from}&to={to}` - Lấy lịch sử từ MySQL
-
-**URL**: http://localhost:8080/dashboard.html
-
----
-
-### 3. **Control Panel** (`/control.html`)
-🎛️ Điều khiển thiết bị và xem dữ liệu real-time
-
-**Tính năng:**
-- ✅ Hiển thị trạng thái thiết bị (Online/Offline)
-- ✅ Điều khiển máy bơm (ON/OFF) bằng toggle switch
-- ✅ Chuyển chế độ: MANUAL / AUTO
-- ✅ Hiển thị dữ liệu cảm biến **real-time** qua WebSocket:
-  - Nhiệt độ (°C)
-  - Độ ẩm không khí (%)
-  - Ánh sáng (lux)
-  - Độ ẩm đất (%)
-- ✅ Progress bar cho mỗi cảm biến
-- ✅ Thống kê nhanh bên cạnh panel điều khiển
-
-**API sử dụng:**
-- `GET /api/v1/devices/{deviceUid}/state` - Lấy trạng thái hiện tại từ Redis
-- `POST /api/v1/devices/{deviceUid}/command` - Gửi lệnh điều khiển
-- `WebSocket /ws` - Nhận cập nhật real-time
-
-**URL**: http://localhost:8080/control.html
-
----
-
-### 4. **AI Chat** (`/index.html`)
-🤖 Trò chuyện với trợ lý AI Synthia
-
-**Tính năng:**
-- ✅ Chat với AI để hỏi về trạng thái vườn
-- ✅ Điều khiển thiết bị bằng giọng nói (Speech-to-Text)
-- ✅ Gửi lệnh bằng văn bản
-- ✅ AI tích hợp Gemini
-
-**API sử dụng:**
-- `POST /api/v1/ai/chat/{deviceUid}` - Gửi tin nhắn cho AI
-
-**URL**: http://localhost:8080/index.html
-
----
-
-## 🚀 Cách sử dụng
-
-### Bước 1: Khởi động Backend
-
-**Option A: Docker** (Khuyến nghị)
-```powershell
-docker-compose up -d
-```
-
-**Option B: Maven**
-```powershell
-.\mvnw spring-boot:run
-```
-
-### Bước 2: Truy cập Frontend
-
-Mở trình duyệt và truy cập:
-
-| Trang | URL | Mô tả |
-|-------|-----|-------|
-| **Trang chủ** | http://localhost:8080/home.html | Landing page |
-| **Dashboard** | http://localhost:8080/dashboard.html | Biểu đồ thống kê |
-| **Control Panel** | http://localhost:8080/control.html | Điều khiển real-time |
-| **AI Chat** | http://localhost:8080/index.html | Trợ lý AI |
-| **Swagger** | http://localhost:8080/swagger-ui.html | API Documentation |
-
-### Bước 3: Đăng ký thiết bị (nếu chưa có)
-
-**Cách 1: Qua Swagger UI**
-1. Mở http://localhost:8080/swagger-ui.html
-2. Tìm **Device Controller** → **POST /api/v1/devices**
-3. Click **Try it out**
-4. Nhập:
-```json
-{
-  "deviceUid": "ESP32_GARDEN_001",
-  "name": "Vườn tầng thượng"
-}
-```
-5. Click **Execute**
-
-**Cách 2: Qua Postman**
-```
-POST http://localhost:8080/api/v1/devices
-Content-Type: application/json
-
-{
-  "deviceUid": "ESP32_GARDEN_001",
-  "name": "Vườn tầng thượng"
-}
-```
-
-### Bước 4: Upload code lên ESP32
-
-Xem hướng dẫn chi tiết trong: `ESP32_SmartGarden/README.md`
-
----
-
-## 📡 Luồng dữ liệu
-
-### 1. Dashboard (Dữ liệu lịch sử)
-```
-User chọn device và khoảng thời gian
-  ↓
-Frontend gọi API GET /devices/{deviceUid}/history
-  ↓
-Backend query MySQL (TelemetryLog table)
-  ↓
-Trả về array of TelemetryLogDto
-  ↓
-Frontend vẽ biểu đồ bằng Chart.js
-```
-
-### 2. Control Panel (Real-time)
-```
-Frontend kết nối WebSocket /ws
-  ↓
-Subscribe topic: /topic/devices/{deviceUid}
-  ↓
-ESP32 gửi dữ liệu qua MQTT
-  ↓
-Backend nhận MQTT → Update Redis → Broadcast WebSocket
-  ↓
-Frontend nhận message → Update UI real-time
-```
-
-### 3. Điều khiển máy bơm
-```
-User click toggle switch
-  ↓
-Frontend gọi POST /devices/{deviceUid}/command
-Body: { "action": "CONTROL_PUMP", "payload": { "state": "ON" } }
-  ↓
-Backend gửi lệnh qua MQTT Outbound
-  ↓
-ESP32 nhận lệnh → Bật relay máy bơm → Gửi state update
-  ↓
-Frontend nhận update qua WebSocket → UI tự động cập nhật
+```mermaid
+graph TB
+    Client[Client Applications<br/>Web Browser/Mobile]
+    
+    Gateway[API Gateway<br/>Django DRF<br/>Port 8000]
+    
+    subgraph "Authentication & Core Services"
+        Auth[Auth Service<br/>MySQL<br/>Port 8001]
+    end
+    
+    subgraph "Business Services"
+        Catalog[Catalog Service<br/>PostgreSQL + JSONB<br/>Port 8003]
+        Cart[Cart Service<br/>MySQL<br/>Port 8004]
+        Customer[Customer Service<br/>MySQL<br/>Port 8002]
+        Staff[Staff Service<br/>MySQL<br/>Port 8005]
+    end
+    
+    subgraph "Databases - MySQL"
+        DB_Auth[(auth_db)]
+        DB_Customer[(customer_db)]
+        DB_Cart[(cart_db)]
+        DB_Staff[(staff_db)]
+    end
+    
+    subgraph "Databases - PostgreSQL"
+        DB_Catalog[(catalog_db<br/>with JSONB)]
+    end
+    
+    Client -->|HTTP/HTTPS| Gateway
+    
+    Gateway -->|JWT Validation| Auth
+    Gateway -->|Forward| Catalog
+    Gateway -->|Forward| Cart
+    Gateway -->|Forward| Customer
+    Gateway -->|Forward| Staff
+    
+    Auth -.->|Connect| DB_Auth
+    Catalog -.->|Connect| DB_Catalog
+    Cart -.->|Connect| DB_Cart
+    Customer -.->|Connect| DB_Customer
+    Staff -.->|Connect| DB_Staff
+    
+    Cart -.->|Verify Item| Catalog
+    
+    style Gateway fill:#ff6b6b
+    style Auth fill:#4ecdc4
+    style Catalog fill:#4ecdc4
+    style Cart fill:#4ecdc4
+    style Customer fill:#4ecdc4
+    style Staff fill:#4ecdc4
 ```
 
 ---
 
-## 🎨 Stack công nghệ Frontend
+## 2. Authentication Flow
 
-- **UI Framework**: Tailwind CSS (CDN)
-- **Charts**: Chart.js
-- **WebSocket**: SockJS + STOMP.js
-- **Icons**: Heroicons (SVG)
-- **Responsive**: Mobile-first design
-
----
-
-## 🐛 Troubleshooting
-
-### ❌ Dashboard không hiển thị dữ liệu
-
-**Nguyên nhân:** Chưa có dữ liệu trong database
-
-**Giải pháp:**
-1. ESP32 phải chạy và gửi telemetry
-2. Hoặc dùng MQTTX để giả lập:
-```json
-Topic: smartgarden/device/ESP32_GARDEN_001/telemetry
-Payload:
-{
-  "sensors": {
-    "temperature": 28.5,
-    "airHumidity": 65.0,
-    "light": 450.0,
-    "soilMoisture": 45.0
-  }
-}
-```
-3. Đợi vài giây để backend lưu vào MySQL
-4. Refresh dashboard
-
----
-
-### ❌ Control Panel không cập nhật real-time
-
-**Nguyên nhân:** WebSocket không kết nối
-
-**Giải pháp:**
-1. Mở Console (F12) → Tab Console
-2. Kiểm tra có lỗi WebSocket không
-3. Đảm bảo backend đang chạy
-4. Kiểm tra WebSocket config trong backend:
-```java
-// WebSocketConfig.java
-@Override
-public void registerStompEndpoints(StompEndpointRegistry registry) {
-    registry.addEndpoint("/ws")
-            .setAllowedOrigins("*")
-            .withSockJS();
-}
+```mermaid
+sequenceDiagram
+    participant Client as Client<br/>Browser/Mobile
+    participant Gateway as API Gateway<br/>8000
+    participant Auth as Auth Service<br/>8001
+    participant AuthDB as MySQL<br/>auth_db
+    
+    Note over Client,AuthDB: 1. Login Request
+    Client->>Gateway: POST /auth/login<br/>{username, password}
+    
+    Note over Client,AuthDB: 2. Forward to Auth Service
+    Gateway->>Auth: POST /auth/login<br/>{username, password}
+    
+    Note over Client,AuthDB: 3. Verify Credentials
+    Auth->>AuthDB: SELECT * FROM users<br/>WHERE username=?
+    AuthDB-->>Auth: User record + password_hash
+    Auth->>Auth: bcrypt.validate(password,<br/>password_hash)
+    
+    Note over Client,AuthDB: 4. Generate JWT Tokens
+    Auth->>Auth: Create Access Token<br/>(exp: 3600s)
+    Auth->>Auth: Create Refresh Token<br/>(exp: 604800s)
+    Auth->>AuthDB: INSERT INTO refresh_tokens<br/>token_hash, expires_at
+    
+    Note over Client,AuthDB: 5. Return Tokens
+    Auth-->>Gateway: {access_token,<br/>refresh_token, user_info}
+    Gateway-->>Client: {access_token,<br/>refresh_token, expires_in}
+    
+    Note over Client,AuthDB: 6. Subsequent Request with JWT
+    Client->>Gateway: GET /catalog/items<br/>Authorization: Bearer <access_token>
+    
+    Note over Client,AuthDB: 7. API Gateway Validates
+    Gateway->>Gateway: Validate JWT signature<br/>& expiration
+    Gateway->>Gateway: Extract user_id, role, email
+    
+    Note over Client,AuthDB: 8. Forward to Service with Headers
+    Gateway->>Auth: GET /catalog/items<br/>X-User-ID: <user_id><br/>X-User-Role: customer
+    
+    Note over Client,AuthDB: 9. Service Returns Response
+    Auth-->>Gateway: {items: [...]}
+    Gateway-->>Client: {items: [...]}
 ```
 
 ---
 
-### ❌ Không điều khiển được máy bơm
+## 3. Role-Based Access Control (RBAC)
 
-**Nguyên nhân 1:** Thiết bị Offline
-
-**Giải pháp:** 
-- Kiểm tra ESP32 đã kết nối WiFi chưa
-- Kiểm tra ESP32 đã kết nối MQTT chưa
-
-**Nguyên nhân 2:** Đang ở chế độ AUTO
-
-**Giải pháp:**
-- Chuyển sang chế độ MANUAL
-- Mới có thể điều khiển máy bơm thủ công
-
----
-
-### ❌ Biểu đồ không hiển thị
-
-**Nguyên nhân:** Chart.js không load
-
-**Giải pháp:**
-1. Kiểm tra kết nối internet (Chart.js load từ CDN)
-2. Hoặc download Chart.js về local:
-```html
-<script src="/js/chart.min.js"></script>
+```mermaid
+graph TD
+    Request["Client Request<br/>+ JWT Token"]
+    
+    Gateway["API Gateway<br/>JWT Validation"]
+    Extract["Extract from JWT:<br/>- user_id<br/>- role<br/>- email"]
+    
+    Decision{"Is role<br/>authorized?"}
+    
+    Customer["Customer Role<br/>✓ GET /catalog<br/>✓ GET/POST/PUT/DELETE /cart<br/>✓ GET /customers/{id}"]
+    Staff["Staff Role<br/>✓ GET /catalog<br/>✓ POST/PUT/DELETE /catalog/items<br/>✓ PUT /catalog/items/{id}/stock<br/>✓ GET /staff/{id}"]
+    Forbidden403["403 Forbidden<br/>Insufficient Permissions"]
+    
+    Allowed["Forward to Service<br/>+ X-User-ID header<br/>+ X-User-Role header"]
+    
+    Request --> Gateway
+    Gateway --> Extract
+    Extract --> Decision
+    Decision -->|customer| Customer
+    Decision -->|staff| Staff
+    Decision -->|other| Forbidden403
+    Customer --> Allowed
+    Staff --> Allowed
+    Forbidden403 --> End["Return Error"]
+    Allowed --> End2["Process & Return"]
+    
+    style Gateway fill:#ff6b6b
+    style Customer fill:#4ecdc4
+    style Staff fill:#95e1d3
+    style Forbidden403 fill:#ff6b6b
 ```
 
 ---
 
-## 📱 Responsive Design
+## 4. Cart to Catalog Verification Flow
 
-Frontend đã được thiết kế responsive:
-
-- ✅ **Desktop** (>1024px): Hiển thị đầy đủ 3-4 cột
-- ✅ **Tablet** (768px-1024px): 2 cột
-- ✅ **Mobile** (<768px): 1 cột, stack vertical
-
----
-
-## 🔐 Security Notes
-
-**Lưu ý:**
-- Frontend hiện tại **KHÔNG có authentication**
-- Phù hợp cho demo hoặc mạng nội bộ
-- Nếu deploy production, cần thêm:
-  - Spring Security
-  - JWT Token
-  - HTTPS
-  - CORS configuration
-
----
-
-## 🚧 Future Improvements
-
-- [ ] Thêm authentication (Login/Register)
-- [ ] Thêm notification khi thiết bị offline
-- [ ] Thêm export data (CSV, Excel)
-- [ ] Thêm dark mode
-- [ ] Thêm mobile app (React Native)
-- [ ] Thêm email/SMS alerts
-- [ ] Thêm camera streaming
-- [ ] Multi-language support
+```mermaid
+sequenceDiagram
+    participant Customer as Customer<br/>Browser
+    participant Gateway as API Gateway<br/>8000
+    participant Cart as Cart Service<br/>8004
+    participant CartDB as MySQL<br/>cart_db
+    participant Catalog as Catalog Service<br/>8003
+    participant CatalogDB as PostgreSQL<br/>catalog_db
+    
+    Customer->>Gateway: POST /cart/items<br/>{item_id: 1, quantity: 2}
+    Gateway->>Cart: POST /cart/items<br/>X-User-ID: user123<br/>{item_id: 1, quantity: 2}
+    
+    Cart->>Catalog: POST /catalog/items/1/verify
+    Catalog->>CatalogDB: SELECT * FROM items<br/>WHERE id=1
+    CatalogDB-->>Catalog: {name, price, stock}
+    Catalog-->>Cart: {valid: true, price: 1299.99}
+    
+    Cart->>CartDB: INSERT INTO cart_items<br/>cart_id, item_id, quantity, unit_price
+    CartDB-->>Cart: Success
+    
+    Cart-->>Gateway: {item_id: 1, quantity: 2, subtotal: 2599.98}
+    Gateway-->>Customer: 201 Created
+```
 
 ---
 
-## 📞 Hỗ trợ
+## 5. Data Model: Catalog with JSONB Specifications
 
-Nếu gặp vấn đề:
-1. Kiểm tra console browser (F12)
-2. Kiểm tra logs backend
-3. Xem API docs: http://localhost:8080/swagger-ui.html
-4. Đọc file `HUONG_DAN_CHAY_INTELLIJ.md`
+```mermaid
+classDiagram
+    class Item {
+        +int id
+        +string name
+        +string sku
+        +enum category
+        +decimal price
+        +int stock_quantity
+        +string description
+        +jsonb specifications
+        +string image_url
+        +timestamptz created_at
+        +timestamptz updated_at
+        +uuid created_by_staff_id
+        +uuid updated_by_staff_id
+        +getSpecification(key)* object
+        +updateStock(quantity)*
+    }
+    
+    class LaptopSpecs {
+        +string processor
+        +int ram_gb
+        +int storage_gb
+        +string storage_type
+        +string gpu
+        +float screen_size_inch
+        +float weight_kg
+        +int battery_hour
+    }
+    
+    class MobileSpecs {
+        +string processor
+        +int ram_gb
+        +int storage_gb
+        +float screen_size_inch
+        +int camera_mp
+        +int battery_mah
+        +boolean 5g
+        +string os
+    }
+    
+    Item "1" --> "*" LaptopSpecs : category=laptop
+    Item "1" --> "*" MobileSpecs : category=mobile
+    
+    note for Item "JSONB field allows flexible schema<br/>Laptop vs Mobile specs vary"
+    note for LaptopSpecs "Laptop specific configurations"
+    note for MobileSpecs "Mobile specific configurations"
+```
 
 ---
 
-**Chúc bạn sử dụng vui vẻ! 🌱**
+## 6. Service Communication Diagram
+
+```mermaid
+graph LR
+    subgraph "Client Layer"
+        Browser["Web Browser<br/>Port 3000<br/>Frontend"]
+    end
+    
+    subgraph "API Gateway Layer"
+        GW["API Gateway<br/>Port 8000<br/>Django DRF"]
+    end
+    
+    subgraph "Service Layer"
+        Auth["Auth Service<br/>Port 8001"]
+        Customer["Customer Service<br/>Port 8002"]
+        Catalog["Catalog Service<br/>Port 8003"]
+        Cart["Cart Service<br/>Port 8004"]
+        Staff["Staff Service<br/>Port 8005"]
+    end
+    
+    subgraph "Data Layer"
+        MySQL["MySQL Cluster<br/>4 Databases"]
+        PG["PostgreSQL<br/>1 Database"]
+    end
+    
+    Browser -->|HTTP/HTTPS| GW
+    
+    GW -->|Validate JWT| Auth
+    GW -->|Route| Customer
+    GW -->|Route| Catalog
+    GW -->|Route| Cart
+    GW -->|Route| Staff
+    
+    Cart -->|Verify Item| Catalog
+    
+    Auth -.-> MySQL
+    Customer -.-> MySQL
+    Catalog -.-> PG
+    Cart -.-> MySQL
+    Staff -.-> MySQL
+    
+    style GW fill:#ff6b6b
+    style Browser fill:#f0f0f0
+```
+
+---
+
+## 7. Database Schema Overview
+
+### MySQL Schema
+
+```mermaid
+erDiagram
+    USERS {
+        string id PK "UUID"
+        string username UK "UNIQUE"
+        string email UK "UNIQUE"
+        string password_hash
+        enum role "customer|staff"
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    REFRESH_TOKENS {
+        string id PK "UUID"
+        string user_id FK "REFERENCES USERS(id)"
+        string token_hash UK
+        boolean is_revoked
+        timestamp expires_at
+        timestamp created_at
+    }
+    
+    CUSTOMERS {
+        string id PK "UUID"
+        string email UK
+        string full_name
+        string phone
+        date birth_date
+        enum gender
+        json preferences
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    CUSTOMER_ADDRESSES {
+        bigint id PK "AUTO_INCREMENT"
+        string customer_id FK "REFERENCES CUSTOMERS(id)"
+        string label "home|office|other"
+        string address_line1
+        string address_line2
+        string city
+        string state_province
+        string postal_code
+        string country
+        string phone
+        boolean is_default
+    }
+    
+    CARTS {
+        bigint id PK "AUTO_INCREMENT"
+        string customer_id UK "UUID"
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    CART_ITEMS {
+        bigint id PK "AUTO_INCREMENT"
+        bigint cart_id FK "REFERENCES CARTS(id)"
+        int item_id "Reference to Catalog"
+        int quantity
+        decimal unit_price
+        timestamp added_at
+    }
+    
+    STAFF {
+        string id PK "UUID"
+        string full_name
+        string phone
+        string email UK
+        enum role "sales_staff|warehouse_staff|support_staff"
+        string department
+        boolean is_active
+        date hire_date
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    USERS ||--o{ REFRESH_TOKENS : "has"
+    CUSTOMERS ||--o{ CUSTOMER_ADDRESSES : "has"
+    CUSTOMERS ||--o{ CARTS : "has"
+    CARTS ||--o{ CART_ITEMS : "has"
+```
+
+### PostgreSQL Schema (Catalog)
+
+```mermaid
+erDiagram
+    ITEMS {
+        serial id PK
+        string name
+        string sku UK
+        string category "laptop|mobile"
+        decimal price
+        int stock_quantity
+        text description
+        jsonb specifications "JSONB - flexible"
+        string image_url
+        timestamptz created_at
+        timestamptz updated_at
+        uuid created_by_staff_id
+        uuid updated_by_staff_id
+    }
+```
+
+---
+
+## 8. Environment Setup Flow
+
+```mermaid
+graph TD
+    DockerCompose["docker-compose.yml"]
+    
+    MySQL5["MySQL Container<br/>auth_db<br/>customer_db<br/>cart_db<br/>staff_db"]
+    
+    PG["PostgreSQL Container<br/>catalog_db"]
+    
+    Services["Service Containers"]
+    
+    Auth["Auth Service<br/>env: DB_HOST,<br/>JWT_SECRET"]
+    
+    Catalog["Catalog Service<br/>env: DB_HOST,<br/>DB_TYPE=postgresql"]
+    
+    CartService["Cart Service<br/>env: DB_HOST,<br/>CATALOG_URL"]
+    
+    Customer["Customer Service<br/>env: DB_HOST"]
+    
+    StaffService["Staff Service<br/>env: DB_HOST"]
+    
+    Gateway["API Gateway<br/>env: JWT_SECRET,<br/>Service URLs"]
+    
+    DockerCompose --> MySQL5
+    DockerCompose --> PG
+    DockerCompose --> Services
+    
+    Services --> Auth
+    Services --> Catalog
+    Services --> CartService
+    Services --> Customer
+    Services --> StaffService
+    Services --> Gateway
+    
+    Auth -.-> MySQL5
+    Customer -.-> MySQL5
+    CartService -.-> MySQL5
+    StaffService -.-> MySQL5
+    Catalog -.-> PG
+    
+    style DockerCompose fill:#ff6b6b
+    style MySQL5 fill:#4ecdc4
+    style PG fill:#f3a683
+```
+
